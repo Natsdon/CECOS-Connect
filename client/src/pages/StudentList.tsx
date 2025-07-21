@@ -42,15 +42,13 @@ import { apiRequest } from '@/lib/queryClient';
 import type { Student } from '@shared/schema';
 
 const addStudentSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Valid email is required'),
   firstName: z.string().min(1, 'First name is required'),
+  middleName: z.string().optional(),
   lastName: z.string().min(1, 'Last name is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  studentId: z.string().min(1, 'Student ID is required'),
-  departmentId: z.string().min(1, 'Department is required'),
-  year: z.string().min(1, 'Year is required'),
-  semester: z.string().min(1, 'Semester is required'),
+  email: z.string().email('Valid email is required'),
+  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  cclId: z.string().min(1, 'CCL ID is required'),
 });
 
 export default function StudentList() {
@@ -73,38 +71,80 @@ export default function StudentList() {
   const form = useForm<z.infer<typeof addStudentSchema>>({
     resolver: zodResolver(addStudentSchema),
     defaultValues: {
-      username: '',
-      email: '',
       firstName: '',
+      middleName: '',
       lastName: '',
+      email: '',
+      phoneNumber: '',
       password: '',
-      studentId: '',
-      departmentId: '',
-      year: '',
-      semester: '',
+      cclId: '',
     },
   });
 
+  // Auto-generate password function
+  const generatePassword = () => {
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const symbols = '!@#$%^&*';
+    
+    let password = '';
+    
+    // Ensure at least 1 capital, 2 numbers, 1 symbol
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+    
+    // Fill remaining 4 characters with random selection
+    const allChars = lowercase + uppercase + numbers + symbols;
+    for (let i = 0; i < 4; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('');
+    
+    form.setValue('password', password);
+  };
+
+  // Auto-generate CCL ID function
+  const generateCCLId = async () => {
+    try {
+      const response: any = await apiRequest('/api/students/next-ccl-id', 'GET');
+      form.setValue('cclId', response.cclId);
+    } catch (error) {
+      console.error('Error generating CCL ID:', error);
+      // Fallback to manual generation if API fails
+      const currentYear = new Date().getFullYear();
+      const yearSuffix = currentYear.toString().slice(-2);
+      const fallbackId = `CCL-${yearSuffix}-0001`;
+      form.setValue('cclId', fallbackId);
+    }
+  };
+
   const addStudentMutation = useMutation({
     mutationFn: async (data: z.infer<typeof addStudentSchema>) => {
+      // Create username from first and last name
+      const username = `${data.firstName.toLowerCase()}.${data.lastName.toLowerCase()}`.replace(/\s+/g, '');
+      
       // First create the user
       const userData = {
-        username: data.username,
+        username: username,
         email: data.email,
         firstName: data.firstName,
+        middleName: data.middleName || null,
         lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
         password: data.password,
         role: 'student'
       };
-      const user = await apiRequest('/api/auth/register', 'POST', userData);
+      const user: any = await apiRequest('/api/auth/register', 'POST', userData);
       
       // Then create the student record
       const studentData = {
         userId: user.id,
-        studentId: data.studentId,
-        departmentId: parseInt(data.departmentId),
-        year: parseInt(data.year),
-        semester: parseInt(data.semester),
+        studentId: data.cclId,
         enrollmentDate: new Date(),
         status: 'active',
         totalCredits: 0
@@ -292,7 +332,14 @@ export default function StudentList() {
       {/* Action Buttons */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+            setIsAddDialogOpen(open);
+            if (open) {
+              // Auto-generate password and CCL ID when dialog opens
+              generatePassword();
+              generateCCLId();
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="bg-burgundy-600 hover:bg-burgundy-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
@@ -308,15 +355,28 @@ export default function StudentList() {
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="firstName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>First Name</FormLabel>
+                          <FormLabel>First Name *</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter first name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="middleName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Middle Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter middle name" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -327,7 +387,7 @@ export default function StudentList() {
                       name="lastName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last Name</FormLabel>
+                          <FormLabel>Last Name *</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter last name" {...field} />
                           </FormControl>
@@ -339,12 +399,12 @@ export default function StudentList() {
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="username"
+                      name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Email *</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter username" {...field} />
+                            <Input type="email" placeholder="Enter email address" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -352,12 +412,12 @@ export default function StudentList() {
                     />
                     <FormField
                       control={form.control}
-                      name="email"
+                      name="phoneNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Phone Number *</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="Enter email address" {...field} />
+                            <Input placeholder="Enter phone number" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -370,104 +430,46 @@ export default function StudentList() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="Enter password" {...field} />
-                        </FormControl>
+                        <div className="flex space-x-2">
+                          <FormControl>
+                            <Input type="password" placeholder="Password will be auto-generated" {...field} />
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={generatePassword}
+                            className="whitespace-nowrap"
+                          >
+                            Auto Generate
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="studentId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Student ID</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="cclId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CCL ID (Student ID)</FormLabel>
+                        <div className="flex space-x-2">
                           <FormControl>
-                            <Input placeholder="Enter student ID" {...field} />
+                            <Input placeholder="CCL ID will be auto-generated" {...field} readOnly />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="departmentId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Department</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select department" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Array.isArray(departments) && departments.map((dept: any) => (
-                                <SelectItem key={dept.id} value={dept.id.toString()}>
-                                  {dept.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="year"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Year</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select year" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="2024">2024</SelectItem>
-                              <SelectItem value="2023">2023</SelectItem>
-                              <SelectItem value="2022">2022</SelectItem>
-                              <SelectItem value="2021">2021</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="semester"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Semester</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select semester" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="1">Semester 1</SelectItem>
-                              <SelectItem value="2">Semester 2</SelectItem>
-                              <SelectItem value="3">Semester 3</SelectItem>
-                              <SelectItem value="4">Semester 4</SelectItem>
-                              <SelectItem value="5">Semester 5</SelectItem>
-                              <SelectItem value="6">Semester 6</SelectItem>
-                              <SelectItem value="7">Semester 7</SelectItem>
-                              <SelectItem value="8">Semester 8</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={generateCCLId}
+                            className="whitespace-nowrap"
+                          >
+                            Generate CCL ID
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <div className="flex justify-end space-x-3 pt-4">
                     <Button
                       type="button"

@@ -10,7 +10,9 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 100 }).notNull().unique(),
   password: text("password").notNull(),
   firstName: varchar("first_name", { length: 50 }).notNull(),
+  middleName: varchar("middle_name", { length: 50 }),
   lastName: varchar("last_name", { length: 50 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 20 }),
   role: varchar("role", { length: 20 }).notNull().default("student"), // student, faculty, admin, epr_admin
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -31,9 +33,9 @@ export const students = pgTable("students", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   studentId: varchar("student_id", { length: 20 }).notNull().unique(),
-  departmentId: integer("department_id").notNull().references(() => departments.id),
-  year: integer("year").notNull(),
-  semester: integer("semester").notNull(),
+  departmentId: integer("department_id").references(() => departments.id),
+  year: integer("year"),
+  semester: integer("semester"),
   enrollmentDate: timestamp("enrollment_date").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, graduated, suspended
   cgpa: decimal("cgpa", { precision: 3, scale: 2 }),
