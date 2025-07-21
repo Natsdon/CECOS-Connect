@@ -129,6 +129,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/students/detailed", authenticateToken, authorize(['admin', 'epr_admin', 'faculty']), async (req: Request, res: Response) => {
+    try {
+      const { departmentId, year, status, search } = req.query;
+      const filters = {
+        departmentId: departmentId ? parseInt(departmentId as string) : undefined,
+        year: year ? parseInt(year as string) : undefined,
+        status: status as string,
+        search: search as string,
+      };
+      
+      const students = await storage.getStudentsWithUserDetails(filters);
+      res.json(students);
+    } catch (error) {
+      console.error("Get detailed students error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/student-requests", authenticateToken, authorize(['admin', 'epr_admin', 'faculty']), async (req: Request, res: Response) => {
+    try {
+      const { status, type } = req.query;
+      const filters = {
+        status: status as string,
+        type: type as string,
+      };
+      
+      const requests = await storage.getStudentRequests(filters);
+      res.json(requests);
+    } catch (error) {
+      console.error("Get student requests error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/student-requests/:id/review", authenticateToken, authorize(['admin', 'epr_admin', 'faculty']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, reviewNotes } = req.body;
+      const reviewerId = req.user!.id;
+      
+      const result = await storage.reviewStudentRequest(id, status, reviewNotes, reviewerId);
+      res.json(result);
+    } catch (error) {
+      console.error("Review student request error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/students/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

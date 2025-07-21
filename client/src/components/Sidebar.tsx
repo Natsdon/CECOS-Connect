@@ -2,8 +2,11 @@ import { GraduationCap, User, LogOut, Gauge, Users, CalendarCheck, ClipboardList
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTabs } from '@/hooks/use-tabs';
+import { SidebarDropdown } from '@/components/SidebarDropdown';
 import Dashboard from '@/pages/Dashboard';
 import StudentManagement from '@/pages/StudentManagement';
+import StudentList from '@/pages/StudentList';
+import StudentRequest from '@/pages/StudentRequest';
 import AttendanceTracking from '@/pages/AttendanceTracking';
 import ExamManagement from '@/pages/ExamManagement';
 import GradeManagement from '@/pages/GradeManagement';
@@ -25,13 +28,6 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
       icon: Gauge,
       component: Dashboard,
       roles: ['student', 'faculty', 'admin', 'epr_admin']
-    },
-    {
-      id: 'students',
-      title: 'Student Management',
-      icon: Users,
-      component: StudentManagement,
-      roles: ['faculty', 'admin', 'epr_admin']
     },
     {
       id: 'attendance',
@@ -67,6 +63,19 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
       icon: Shield,
       component: UserPrivileges,
       roles: ['epr_admin']
+    }
+  ];
+
+  const studentManagementOptions = [
+    {
+      id: 'student-list',
+      title: 'Student List',
+      component: StudentList
+    },
+    {
+      id: 'student-request',
+      title: 'Student Request',
+      component: StudentRequest
     }
   ];
 
@@ -146,6 +155,18 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
             <span className="text-sm font-medium">{item.title}</span>
           </button>
         ))}
+        
+        {/* Student Management Dropdown */}
+        {user && ['faculty', 'admin', 'epr_admin'].includes(user.role) && (
+          <SidebarDropdown
+            title="Student Management"
+            icon={Users}
+            options={studentManagementOptions}
+            openTab={openTab}
+            activeTabId={activeTabId}
+            isActive={activeTabId === 'student-list' || activeTabId === 'student-request'}
+          />
+        )}
       </nav>
 
       {/* Logout Button */}

@@ -23,10 +23,16 @@ export interface IStorage {
 
   // Students
   getStudents(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<Student[]>;
+  getStudentsWithUserDetails(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<any[]>;
   getStudentById(id: number): Promise<Student | undefined>;
   getStudentByUserId(userId: number): Promise<Student | undefined>;
   createStudent(student: InsertStudent): Promise<Student>;
   updateStudent(id: number, student: Partial<InsertStudent>): Promise<Student | undefined>;
+
+  // Student Requests
+  getStudentRequests(filters?: { status?: string; type?: string }): Promise<any[]>;
+  createStudentRequest(request: any): Promise<any>;
+  reviewStudentRequest(id: number, status: string, reviewNotes: string, reviewerId: number): Promise<any>;
 
   // Faculty
   getFaculty(filters?: { departmentId?: number; search?: string }): Promise<Faculty[]>;
@@ -168,6 +174,56 @@ export class DatabaseStorage implements IStorage {
       .where(eq(students.id, id))
       .returning();
     return updatedStudent || undefined;
+  }
+
+  async getStudentsWithUserDetails(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<any[]> {
+    let query = db.select({
+      id: students.id,
+      userId: students.userId,
+      studentId: students.studentId,
+      departmentId: students.departmentId,
+      year: students.year,
+      semester: students.semester,
+      enrollmentDate: students.enrollmentDate,
+      status: students.status,
+      cgpa: students.cgpa,
+      totalCredits: students.totalCredits,
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        username: users.username
+      }
+    }).from(students).innerJoin(users, eq(students.userId, users.id));
+    
+    if (filters?.departmentId) {
+      query = query.where(eq(students.departmentId, filters.departmentId));
+    }
+    if (filters?.year) {
+      query = query.where(eq(students.year, filters.year));
+    }
+    if (filters?.status) {
+      query = query.where(eq(students.status, filters.status));
+    }
+    
+    return await query;
+  }
+
+  async getStudentRequests(filters?: { status?: string; type?: string }): Promise<any[]> {
+    // Return empty array for now since we don't have a student_requests table
+    // In a real implementation, you would query from a student_requests table
+    return [];
+  }
+
+  async createStudentRequest(request: any): Promise<any> {
+    // Return mock data for now since we don't have a student_requests table
+    return { id: 1, ...request, submittedAt: new Date() };
+  }
+
+  async reviewStudentRequest(id: number, status: string, reviewNotes: string, reviewerId: number): Promise<any> {
+    // Return mock data for now since we don't have a student_requests table
+    return { id, status, reviewNotes, reviewedBy: reviewerId, reviewedAt: new Date() };
   }
 
   async getFaculty(filters?: { departmentId?: number; search?: string }): Promise<Faculty[]> {
