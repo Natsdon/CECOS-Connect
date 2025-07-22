@@ -51,11 +51,24 @@ const addStudentSchema = z.object({
   cclId: z.string().min(1, 'CCL ID is required'),
 });
 
+const editStudentSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  middleName: z.string().optional(),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Valid email is required'),
+  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+  departmentId: z.string().optional(),
+  year: z.string().optional(),
+  semester: z.string().optional(),
+  status: z.string().min(1, 'Status is required'),
+});
+
 export default function StudentList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -83,6 +96,21 @@ export default function StudentList() {
       phoneNumber: '',
       password: '',
       cclId: '',
+    },
+  });
+
+  const editForm = useForm<z.infer<typeof editStudentSchema>>({
+    resolver: zodResolver(editStudentSchema),
+    defaultValues: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      departmentId: '',
+      year: '',
+      semester: '',
+      status: 'active',
     },
   });
 
@@ -175,6 +203,49 @@ export default function StudentList() {
     }
   });
 
+  // Edit student mutation
+  const editStudentMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof editStudentSchema>) => {
+      if (!selectedStudent) throw new Error('No student selected');
+      
+      // Update user information
+      const userUpdateData = {
+        firstName: data.firstName,
+        middleName: data.middleName || null,
+        lastName: data.lastName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+      };
+      await apiRequest(`/api/users/${selectedStudent.userId}`, 'PUT', userUpdateData);
+
+      // Update student information
+      const studentUpdateData = {
+        departmentId: data.departmentId ? parseInt(data.departmentId) : null,
+        year: data.year ? parseInt(data.year) : null,
+        semester: data.semester ? parseInt(data.semester) : null,
+        status: data.status,
+      };
+      return apiRequest(`/api/students/${selectedStudent.id}`, 'PUT', studentUpdateData).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/students/detailed'] });
+      toast({
+        title: 'Success',
+        description: 'Student has been updated successfully.',
+      });
+      setIsEditDialogOpen(false);
+      setSelectedStudent(null);
+      editForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   // Delete student mutation
   const deleteStudentMutation = useMutation({
     mutationFn: async (studentId: number) => {
@@ -200,6 +271,10 @@ export default function StudentList() {
 
   const onSubmit = (data: z.infer<typeof addStudentSchema>) => {
     addStudentMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: z.infer<typeof editStudentSchema>) => {
+    editStudentMutation.mutate(data);
   };
 
   // Suspend student mutation
@@ -229,6 +304,23 @@ export default function StudentList() {
   const handleSuspendStudent = (student: any) => {
     setSelectedStudent(student);
     setIsSuspendDialogOpen(true);
+  };
+
+  const handleEditStudent = (student: any) => {
+    setSelectedStudent(student);
+    // Populate edit form with student data
+    editForm.reset({
+      firstName: student.user?.firstName || '',
+      middleName: student.user?.middleName || '',
+      lastName: student.user?.lastName || '',
+      email: student.user?.email || '',
+      phoneNumber: student.user?.phoneNumber || '',
+      departmentId: student.departmentId?.toString() || '',
+      year: student.year?.toString() || '',
+      semester: student.semester?.toString() || '',
+      status: student.status || 'active',
+    });
+    setIsEditDialogOpen(true);
   };
 
   const handleDeleteStudent = (student: any) => {
@@ -638,7 +730,7 @@ export default function StudentList() {
                           <Eye className="w-4 h-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditStudent(student)}>
                           Edit Student
                         </DropdownMenuItem>
                         {student.status !== 'suspended' && (
@@ -821,6 +913,223 @@ export default function StudentList() {
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>
+              Update student information for {selectedStudent?.user?.firstName} {selectedStudent?.user?.lastName} 
+              ({selectedStudent?.studentId})
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Personal Information</h3>
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="First name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="middleName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Middle Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Middle name (optional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Last name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email *</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="student@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+1 (555) 123-4567" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Academic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Academic Information</h3>
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="departmentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Department</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">No Department</SelectItem>
+                            {departments.map((dept: any) => (
+                              <SelectItem key={dept.id} value={dept.id.toString()}>
+                                {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Academic Year</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select year" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Not Set</SelectItem>
+                            <SelectItem value="1">1st Year</SelectItem>
+                            <SelectItem value="2">2nd Year</SelectItem>
+                            <SelectItem value="3">3rd Year</SelectItem>
+                            <SelectItem value="4">4th Year</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="semester"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Semester</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select semester" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Not Set</SelectItem>
+                            <SelectItem value="1">1st Semester</SelectItem>
+                            <SelectItem value="2">2nd Semester</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="suspended">Suspended</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setSelectedStudent(null);
+                    editForm.reset();
+                  }}
+                  disabled={editStudentMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={editStudentMutation.isPending}
+                >
+                  {editStudentMutation.isPending ? 'Updating...' : 'Update Student'}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 

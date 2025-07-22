@@ -239,6 +239,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/students/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid student ID" });
+      }
+      
+      const updateData = req.body;
+      const updatedStudent = await storage.updateStudent(id, updateData);
+      
+      if (!updatedStudent) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      res.json(updatedStudent);
+    } catch (error) {
+      console.error("Update student error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/users/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const updateData = req.body;
+      const updatedUser = await storage.updateUser(id, updateData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Remove password from response
+      const { password, ...userResponse } = updatedUser;
+      res.json(userResponse);
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.delete("/api/students/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

@@ -559,6 +559,36 @@ export class DatabaseStorage implements IStorage {
       pendingApplications: pendingApplicationsResult.count,
     };
   }
+  async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User | undefined> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, id))
+        .returning();
+      
+      return updatedUser || undefined;
+    } catch (error) {
+      console.error("Update user error:", error);
+      throw error;
+    }
+  }
+
+  async updateStudent(id: number, updateData: Partial<InsertStudent>): Promise<Student | undefined> {
+    try {
+      const [updatedStudent] = await db
+        .update(students)
+        .set(updateData)
+        .where(eq(students.id, id))
+        .returning();
+      
+      return updatedStudent || undefined;
+    } catch (error) {
+      console.error("Update student error:", error);
+      throw error;
+    }
+  }
+
   async deleteStudent(id: number): Promise<boolean> {
     try {
       // First get the student to find their user ID
