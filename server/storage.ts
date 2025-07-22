@@ -28,6 +28,7 @@ export interface IStorage {
   getStudentByUserId(userId: number): Promise<Student | undefined>;
   createStudent(student: InsertStudent): Promise<Student>;
   updateStudent(id: number, student: Partial<InsertStudent>): Promise<Student | undefined>;
+  suspendStudent(id: number, reason: string, adminId: number): Promise<Student | undefined>;
 
   // Student Requests
   getStudentRequests(filters?: { status?: string; type?: string }): Promise<any[]>;
@@ -176,6 +177,42 @@ export class DatabaseStorage implements IStorage {
     return updatedStudent || undefined;
   }
 
+  async suspendStudent(id: number, reason: string, adminId: number): Promise<Student | undefined> {
+    // First get the current student to access their suspension history
+    const currentStudent = await db
+      .select()
+      .from(students)
+      .where(eq(students.id, id))
+      .limit(1);
+    
+    if (currentStudent.length === 0) {
+      throw new Error("Student not found");
+    }
+
+    const student = currentStudent[0];
+    const suspensionRecord = {
+      date: new Date().toISOString(),
+      reason,
+      adminId,
+    };
+
+    // Get current suspension history and add new record
+    const currentHistory = (student.suspensionHistory as any[]) || [];
+    const updatedHistory = [...currentHistory, suspensionRecord];
+
+    // Update student status to suspended and add to history
+    const [updatedStudent] = await db
+      .update(students)
+      .set({
+        status: 'suspended',
+        suspensionHistory: updatedHistory
+      })
+      .where(eq(students.id, id))
+      .returning();
+    
+    return updatedStudent || undefined;
+  }
+
   async getStudentsWithUserDetails(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<any[]> {
     let query = db.select({
       id: students.id,
@@ -188,12 +225,15 @@ export class DatabaseStorage implements IStorage {
       status: students.status,
       cgpa: students.cgpa,
       totalCredits: students.totalCredits,
+      suspensionHistory: students.suspensionHistory,
       user: {
         id: users.id,
         firstName: users.firstName,
         lastName: users.lastName,
+        middleName: users.middleName,
         email: users.email,
-        username: users.username
+        username: users.username,
+        phoneNumber: users.phoneNumber
       }
     }).from(students).innerJoin(users, eq(students.userId, users.id));
     

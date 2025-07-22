@@ -56,6 +56,10 @@ export default function StudentList() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [suspensionReason, setSuspensionReason] = useState('');
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -171,6 +175,55 @@ export default function StudentList() {
 
   const onSubmit = (data: z.infer<typeof addStudentSchema>) => {
     addStudentMutation.mutate(data);
+  };
+
+  // Suspend student mutation
+  const suspendStudentMutation = useMutation({
+    mutationFn: async ({ studentId, reason }: { studentId: number; reason: string }) => {
+      return apiRequest(`/api/students/${studentId}/suspend`, 'POST', { reason }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/students/detailed'] });
+      toast({
+        title: 'Success',
+        description: 'Student has been suspended successfully.',
+      });
+      setIsSuspendDialogOpen(false);
+      setSuspensionReason('');
+      setSelectedStudent(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to suspend student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const handleSuspendStudent = (student: any) => {
+    setSelectedStudent(student);
+    setIsSuspendDialogOpen(true);
+  };
+
+  const handleViewDetails = (student: any) => {
+    setSelectedStudent(student);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const confirmSuspension = () => {
+    if (!selectedStudent || !suspensionReason.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a reason for suspension.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    suspendStudentMutation.mutate({
+      studentId: selectedStudent.id,
+      reason: suspensionReason.trim()
+    });
   };
 
   const filteredStudents = Array.isArray(students) ? students.filter((student: any) => {
@@ -529,7 +582,14 @@ export default function StudentList() {
                         {student.user?.firstName || 'Unknown'} {student.user?.lastName || 'User'}
                       </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span>ID: {student.studentId}</span>
+                        <span>ID: 
+                          <button 
+                            onClick={() => handleViewDetails(student)}
+                            className="text-burgundy-600 hover:text-burgundy-800 hover:underline ml-1 font-medium"
+                          >
+                            {student.studentId}
+                          </button>
+                        </span>
                         <span>•</span>
                         <span>{student.user?.email || 'No email'}</span>
                         <span>•</span>
@@ -546,16 +606,29 @@ export default function StudentList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(student)}>
                           <Eye className="w-4 h-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           Edit Student
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          Suspend Student
-                        </DropdownMenuItem>
+                        {student.status !== 'suspended' && (
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleSuspendStudent(student)}
+                          >
+                            Suspend Student
+                          </DropdownMenuItem>
+                        )}
+                        {student.status === 'suspended' && (
+                          <DropdownMenuItem 
+                            className="text-green-600"
+                            onClick={() => {/* TODO: Implement reactivate */}}
+                          >
+                            Reactivate Student
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -565,6 +638,156 @@ export default function StudentList() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Suspend Student Dialog */}
+      <Dialog open={isSuspendDialogOpen} onOpenChange={setIsSuspendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Suspend Student</DialogTitle>
+            <DialogDescription>
+              You are about to suspend {selectedStudent?.user?.firstName} {selectedStudent?.user?.lastName} 
+              ({selectedStudent?.studentId}). Please provide a reason for this action.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for Suspension *
+              </label>
+              <textarea
+                value={suspensionReason}
+                onChange={(e) => setSuspensionReason(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-burgundy-500 focus:border-transparent"
+                rows={4}
+                placeholder="Please provide a detailed reason for suspension..."
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsSuspendDialogOpen(false);
+                setSuspensionReason('');
+                setSelectedStudent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmSuspension}
+              disabled={suspendStudentMutation.isPending || !suspensionReason.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {suspendStudentMutation.isPending ? 'Suspending...' : 'Confirm Suspension'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Student Details</DialogTitle>
+            <DialogDescription>
+              Complete profile information for {selectedStudent?.user?.firstName} {selectedStudent?.user?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStudent && (
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Full Name</label>
+                      <p className="text-gray-900">{selectedStudent.user?.firstName} {selectedStudent.user?.middleName || ''} {selectedStudent.user?.lastName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <p className="text-gray-900">{selectedStudent.user?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Phone Number</label>
+                      <p className="text-gray-900">{selectedStudent.user?.phoneNumber || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Username</label>
+                      <p className="text-gray-900">{selectedStudent.user?.username || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Academic Information</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">CCL ID</label>
+                      <p className="text-gray-900 font-medium">{selectedStudent.studentId}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Department</label>
+                      <p className="text-gray-900">{selectedStudent.department?.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Status</label>
+                      <div className="mt-1">
+                        {getStatusBadge(selectedStudent.status)}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Enrollment Date</label>
+                      <p className="text-gray-900">
+                        {selectedStudent.enrollmentDate ? new Date(selectedStudent.enrollmentDate).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Total Credits</label>
+                      <p className="text-gray-900">{selectedStudent.totalCredits || 0}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">CGPA</label>
+                      <p className="text-gray-900">{selectedStudent.cgpa || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Suspension History - if student has been suspended */}
+              {selectedStudent.suspensionHistory && selectedStudent.suspensionHistory.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Suspension History</h3>
+                  <div className="space-y-3">
+                    {selectedStudent.suspensionHistory.map((suspension: any, index: number) => (
+                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-red-800">Suspended on: {new Date(suspension.date).toLocaleDateString()}</p>
+                            <p className="text-red-700 mt-1">{suspension.reason}</p>
+                          </div>
+                          <Badge variant="destructive">Suspended</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={() => setIsDetailsDialogOpen(false)}
+              variant="outline"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

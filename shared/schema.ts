@@ -40,6 +40,7 @@ export const students = pgTable("students", {
   status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, graduated, suspended
   cgpa: decimal("cgpa", { precision: 3, scale: 2 }),
   totalCredits: integer("total_credits").default(0),
+  suspensionHistory: jsonb("suspension_history").default([]), // Array of suspension records
 });
 
 // Faculty table

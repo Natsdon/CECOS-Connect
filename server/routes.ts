@@ -232,6 +232,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/students/:id/suspend", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reason } = req.body;
+      const adminId = (req as any).user.id;
+      
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: "Suspension reason is required" });
+      }
+      
+      const result = await storage.suspendStudent(id, reason.trim(), adminId);
+      res.json(result);
+    } catch (error) {
+      console.error("Suspend student error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Attendance routes
   app.get("/api/attendance", authenticateToken, async (req: Request, res: Response) => {
     try {
