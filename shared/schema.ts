@@ -233,6 +233,8 @@ export const insertDepartmentSchema = createInsertSchema(departments).omit({
 
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
+}).extend({
+  enrollmentDate: z.string().transform((str) => new Date(str)),
 });
 
 export const insertFacultySchema = createInsertSchema(faculty).omit({

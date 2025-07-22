@@ -115,8 +115,9 @@ export default function StudentList() {
   // Auto-generate CCL ID function
   const generateCCLId = async () => {
     try {
-      const response: any = await apiRequest('/api/students/next-ccl-id', 'GET').then(res => res.json());
-      form.setValue('cclId', response.cclId);
+      const response = await apiRequest('/api/students/next-ccl-id', 'GET');
+      const data = await response.json();
+      form.setValue('cclId', data.cclId);
     } catch (error) {
       console.error('Error generating CCL ID:', error);
       // Fallback to manual generation if API fails
@@ -149,7 +150,7 @@ export default function StudentList() {
       const studentData = {
         userId: user.id,
         studentId: data.cclId,
-        enrollmentDate: new Date(),
+        enrollmentDate: new Date().toISOString(),
         status: 'active',
         totalCredits: 0
       };
