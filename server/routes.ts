@@ -180,6 +180,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/students/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Check if id is valid
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid student ID" });
+      }
+      
       const student = await storage.getStudentById(id);
       
       if (!student) {
@@ -189,34 +195,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(student);
     } catch (error) {
       console.error("Get student error:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  app.get("/api/students/next-ccl-id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
-    try {
-      const currentYear = new Date().getFullYear();
-      const yearSuffix = currentYear.toString().slice(-2);
-      
-      // Get all students with CCL IDs for the current year
-      const allStudents = await storage.getStudents();
-      const currentYearStudents = allStudents.filter((student: any) => 
-        student.studentId && student.studentId.startsWith(`CCL-${yearSuffix}-`)
-      );
-      
-      let nextNumber = 1;
-      if (currentYearStudents.length > 0) {
-        const numbers = currentYearStudents.map((student: any) => {
-          const parts = student.studentId.split('-');
-          return parseInt(parts[2]) || 0;
-        });
-        nextNumber = Math.max(...numbers) + 1;
-      }
-      
-      const cclId = `CCL-${yearSuffix}-${nextNumber.toString().padStart(4, '0')}`;
-      res.json({ cclId });
-    } catch (error) {
-      console.error("Generate CCL ID error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
