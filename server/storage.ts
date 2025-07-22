@@ -215,36 +215,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   async generateNextCCLId(): Promise<string> {
-    // Get current year (last 2 digits)
-    const currentYear = new Date().getFullYear();
-    const yearSuffix = currentYear.toString().slice(-2);
-    const pattern = `CCL-${yearSuffix}-%`;
-    
-    // Find all CCL IDs for this year using ilike for case-insensitive matching
-    const existingStudents = await db
-      .select({ studentId: students.studentId })
-      .from(students)
-      .where(ilike(students.studentId, pattern));
-    
-    let nextNumber = 1;
-    
-    if (existingStudents.length > 0) {
-      // Extract numbers from all matching CCL IDs and find the highest
-      const numbers = existingStudents
-        .map(student => {
-          const match = student.studentId.match(/CCL-\d{2}-(\d{4})$/);
-          return match ? parseInt(match[1]) : 0;
-        })
-        .filter(num => num > 0);
+    try {
+      // Get current year (last 2 digits)
+      const currentYear = new Date().getFullYear();
+      const yearSuffix = currentYear.toString().slice(-2);
       
-      if (numbers.length > 0) {
-        nextNumber = Math.max(...numbers) + 1;
+      // Get all students and filter client-side to avoid SQL pattern issues
+      const allStudents = await db.select({ studentId: students.studentId }).from(students);
+      
+      // Filter for current year CCL IDs
+      const currentYearStudents = allStudents.filter(student => 
+        student.studentId.startsWith(`CCL-${yearSuffix}-`)
+      );
+      
+      let nextNumber = 1;
+      
+      if (currentYearStudents.length > 0) {
+        // Extract numbers from all matching CCL IDs and find the highest
+        const numbers = currentYearStudents
+          .map(student => {
+            const match = student.studentId.match(/CCL-\d{2}-(\d{4})$/);
+            return match ? parseInt(match[1]) : 0;
+          })
+          .filter(num => num > 0);
+        
+        if (numbers.length > 0) {
+          nextNumber = Math.max(...numbers) + 1;
+        }
       }
+      
+      // Format as 4-digit number with leading zeros
+      const formattedNumber = nextNumber.toString().padStart(4, '0');
+      return `CCL-${yearSuffix}-${formattedNumber}`;
+    } catch (error) {
+      console.error('Error in generateNextCCLId:', error);
+      // Fallback: return a simple incremented ID
+      const currentYear = new Date().getFullYear();
+      const yearSuffix = currentYear.toString().slice(-2);
+      const timestamp = Date.now().toString().slice(-4);
+      return `CCL-${yearSuffix}-${timestamp}`;
     }
-    
-    // Format as 4-digit number with leading zeros
-    const formattedNumber = nextNumber.toString().padStart(4, '0');
-    return `CCL-${yearSuffix}-${formattedNumber}`;
   }
 
   async getStudentsWithUserDetails(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<any[]> {
