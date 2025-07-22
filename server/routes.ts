@@ -177,6 +177,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Move specific routes before parameterized routes
+  app.get("/api/students/next-ccl-id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const nextCCLId = await storage.generateNextCCLId();
+      res.json({ cclId: nextCCLId });
+    } catch (error) {
+      console.error("Generate CCL ID error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/students", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const studentData = insertStudentSchema.parse(req.body);
+      const student = await storage.createStudent(studentData);
+      res.status(201).json(student);
+    } catch (error) {
+      console.error("Create student error:", error);
+      res.status(400).json({ message: "Invalid student data" });
+    }
+  });
+
   app.get("/api/students/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
@@ -195,27 +217,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(student);
     } catch (error) {
       console.error("Get student error:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  app.post("/api/students", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
-    try {
-      const studentData = insertStudentSchema.parse(req.body);
-      const student = await storage.createStudent(studentData);
-      res.status(201).json(student);
-    } catch (error) {
-      console.error("Create student error:", error);
-      res.status(400).json({ message: "Invalid student data" });
-    }
-  });
-
-  app.get("/api/students/next-ccl-id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
-    try {
-      const nextCCLId = await storage.generateNextCCLId();
-      res.json({ cclId: nextCCLId });
-    } catch (error) {
-      console.error("Generate CCL ID error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
