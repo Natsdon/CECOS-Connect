@@ -559,6 +559,26 @@ export class DatabaseStorage implements IStorage {
       pendingApplications: pendingApplicationsResult.count,
     };
   }
+  async deleteStudent(id: number): Promise<boolean> {
+    try {
+      // First get the student to find their user ID
+      const student = await this.getStudentById(id);
+      if (!student) {
+        throw new Error("Student not found");
+      }
+
+      // Delete the student record first (due to foreign key constraint)
+      await db.delete(students).where(eq(students.id, id));
+      
+      // Then delete the associated user record
+      await db.delete(users).where(eq(users.id, student.userId));
+      
+      return true;
+    } catch (error) {
+      console.error("Delete student error:", error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

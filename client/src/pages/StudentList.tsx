@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Filter, MoreHorizontal, Users, UserCheck, UserX, Eye, Plus } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Users, UserCheck, UserX, Eye, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +58,7 @@ export default function StudentList() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [suspensionReason, setSuspensionReason] = useState('');
   
@@ -174,6 +175,29 @@ export default function StudentList() {
     }
   });
 
+  // Delete student mutation
+  const deleteStudentMutation = useMutation({
+    mutationFn: async (studentId: number) => {
+      return apiRequest(`/api/students/${studentId}`, 'DELETE').then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/students/detailed'] });
+      toast({
+        title: 'Success',
+        description: 'Student has been deleted successfully.',
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedStudent(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const onSubmit = (data: z.infer<typeof addStudentSchema>) => {
     addStudentMutation.mutate(data);
   };
@@ -205,6 +229,11 @@ export default function StudentList() {
   const handleSuspendStudent = (student: any) => {
     setSelectedStudent(student);
     setIsSuspendDialogOpen(true);
+  };
+
+  const handleDeleteStudent = (student: any) => {
+    setSelectedStudent(student);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleViewDetails = (student: any) => {
@@ -628,6 +657,13 @@ export default function StudentList() {
                             Reactivate Student
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => handleDeleteStudent(student)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Student
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -783,6 +819,39 @@ export default function StudentList() {
               variant="outline"
             >
               Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Student Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Student</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete {selectedStudent?.user?.firstName} {selectedStudent?.user?.lastName} 
+              ({selectedStudent?.studentId})? This action cannot be undone and will remove all associated records.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedStudent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => deleteStudentMutation.mutate(selectedStudent?.id)}
+              disabled={deleteStudentMutation.isPending}
+            >
+              {deleteStudentMutation.isPending ? 'Deleting...' : 'Delete Student'}
             </Button>
           </div>
         </DialogContent>

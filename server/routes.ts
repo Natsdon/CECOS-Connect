@@ -239,6 +239,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/students/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid student ID" });
+      }
+      
+      await storage.deleteStudent(id);
+      res.json({ message: "Student deleted successfully" });
+    } catch (error) {
+      console.error("Delete student error:", error);
+      if (error instanceof Error && error.message === "Student not found") {
+        res.status(404).json({ message: "Student not found" });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  });
+
   // Attendance routes
   app.get("/api/attendance", authenticateToken, async (req: Request, res: Response) => {
     try {
