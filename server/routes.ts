@@ -188,6 +188,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get student journey (enrollment history)
+  app.get("/api/students/:id/journey", authenticateToken, authorize(['admin', 'epr_admin', 'faculty']), async (req: Request, res: Response) => {
+    try {
+      const studentId = parseInt(req.params.id);
+      
+      if (isNaN(studentId)) {
+        return res.status(400).json({ message: "Invalid student ID" });
+      }
+      
+      // For now, return mock data. In a real implementation, this would query enrollments table
+      const mockJourney = [
+        {
+          id: 1,
+          courseCode: 'CS101',
+          courseName: 'Introduction to Computer Science',
+          startDate: '2024-09-01',
+          endDate: '2024-12-15',
+          status: 'completed',
+          grade: 'A',
+          credits: 3,
+          semester: 'Fall 2024'
+        },
+        {
+          id: 2,
+          courseCode: 'CS102',
+          courseName: 'Data Structures and Algorithms',
+          startDate: '2025-01-15',
+          endDate: null,
+          status: 'in_progress',
+          grade: null,
+          credits: 4,
+          semester: 'Spring 2025'
+        },
+        {
+          id: 3,
+          courseCode: 'MATH201',
+          courseName: 'Discrete Mathematics',
+          startDate: '2025-01-15',
+          endDate: null,
+          status: 'in_progress',
+          grade: null,
+          credits: 3,
+          semester: 'Spring 2025'
+        }
+      ];
+      
+      res.json(mockJourney);
+    } catch (error) {
+      console.error("Get student journey error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/students", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
       const studentData = insertStudentSchema.parse(req.body);

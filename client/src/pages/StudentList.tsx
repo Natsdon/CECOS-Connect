@@ -307,20 +307,16 @@ export default function StudentList() {
   };
 
   const handleEditStudent = (student: any) => {
-    setSelectedStudent(student);
-    // Populate edit form with student data
-    editForm.reset({
-      firstName: student.user?.firstName || '',
-      middleName: student.user?.middleName || '',
-      lastName: student.user?.lastName || '',
-      email: student.user?.email || '',
-      phoneNumber: student.user?.phoneNumber || '',
-      departmentId: student.departmentId?.toString() || 'none',
-      year: student.year?.toString() || 'none',
-      semester: student.semester?.toString() || 'none',
-      status: student.status || 'active',
-    });
-    setIsEditDialogOpen(true);
+    // Open student profile in a new tab
+    if (window.openTab) {
+      window.openTab({
+        id: `student-profile-${student.id}`,
+        title: `${student.user?.firstName} ${student.user?.lastName}`,
+        icon: 'fas fa-user',
+        component: 'StudentProfile',
+        props: { studentId: student.id }
+      });
+    }
   };
 
   const handleDeleteStudent = (student: any) => {
