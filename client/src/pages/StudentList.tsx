@@ -582,14 +582,12 @@ export default function StudentList() {
                         {student.user?.firstName || 'Unknown'} {student.user?.lastName || 'User'}
                       </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span>ID: 
-                          <button 
-                            onClick={() => handleViewDetails(student)}
-                            className="text-burgundy-600 hover:text-burgundy-800 hover:underline ml-1 font-medium"
-                          >
-                            {student.studentId}
-                          </button>
-                        </span>
+                        <button 
+                          onClick={() => handleViewDetails(student)}
+                          className="text-burgundy-600 hover:text-burgundy-800 hover:underline font-medium"
+                        >
+                          {student.studentId}
+                        </button>
                         <span>•</span>
                         <span>{student.user?.email || 'No email'}</span>
                         <span>•</span>
