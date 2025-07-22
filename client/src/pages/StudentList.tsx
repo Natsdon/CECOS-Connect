@@ -74,6 +74,10 @@ export default function StudentList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [suspensionReason, setSuspensionReason] = useState('');
+  const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
+  const [reactivationReason, setReactivationReason] = useState('');
+  const [isInactivateDialogOpen, setIsInactivateDialogOpen] = useState(false);
+  const [inactivationReason, setInactivationReason] = useState('');
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -301,9 +305,67 @@ export default function StudentList() {
     }
   });
 
+  // Reactivate student mutation
+  const reactivateStudentMutation = useMutation({
+    mutationFn: async ({ studentId, reason }: { studentId: number; reason: string }) => {
+      return apiRequest(`/api/students/${studentId}/reactivate`, 'POST', { reason }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/students/detailed'] });
+      toast({
+        title: 'Success',
+        description: 'Student has been reactivated successfully.',
+      });
+      setIsReactivateDialogOpen(false);
+      setReactivationReason('');
+      setSelectedStudent(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reactivate student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Inactivate student mutation
+  const inactivateStudentMutation = useMutation({
+    mutationFn: async ({ studentId, reason }: { studentId: number; reason: string }) => {
+      return apiRequest(`/api/students/${studentId}/inactivate`, 'POST', { reason }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/students/detailed'] });
+      toast({
+        title: 'Success',
+        description: 'Student has been marked as inactive successfully.',
+      });
+      setIsInactivateDialogOpen(false);
+      setInactivationReason('');
+      setSelectedStudent(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to inactivate student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const handleSuspendStudent = (student: any) => {
     setSelectedStudent(student);
     setIsSuspendDialogOpen(true);
+  };
+
+  const handleReactivateStudent = (student: any) => {
+    setSelectedStudent(student);
+    setIsReactivateDialogOpen(true);
+  };
+
+  const handleInactivateStudent = (student: any) => {
+    setSelectedStudent(student);
+    setIsInactivateDialogOpen(true);
   };
 
   const handleEditStudent = (student: any) => {
@@ -344,6 +406,36 @@ export default function StudentList() {
     });
   };
 
+  const confirmReactivation = () => {
+    if (!selectedStudent || !reactivationReason.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a reason for reactivation.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    reactivateStudentMutation.mutate({
+      studentId: selectedStudent.id,
+      reason: reactivationReason.trim()
+    });
+  };
+
+  const confirmInactivation = () => {
+    if (!selectedStudent || !inactivationReason.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a reason for inactivation.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    inactivateStudentMutation.mutate({
+      studentId: selectedStudent.id,
+      reason: inactivationReason.trim()
+    });
+  };
+
   const filteredStudents = Array.isArray(students) ? students.filter((student: any) => {
     const matchesSearch = 
       (student.user?.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -359,6 +451,7 @@ export default function StudentList() {
     const statusConfig = {
       active: { variant: 'default', className: 'bg-green-100 text-green-800' },
       suspended: { variant: 'secondary', className: 'bg-yellow-100 text-yellow-800' },
+      inactive: { variant: 'outline', className: 'bg-gray-100 text-gray-800' },
       graduated: { variant: 'outline', className: 'bg-blue-100 text-blue-800' },
       withdrawn: { variant: 'destructive', className: 'bg-red-100 text-red-800' }
     };
@@ -479,6 +572,7 @@ export default function StudentList() {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
                 <SelectItem value="graduated">Graduated</SelectItem>
                 <SelectItem value="withdrawn">Withdrawn</SelectItem>
               </SelectContent>
@@ -729,22 +823,31 @@ export default function StudentList() {
                         <DropdownMenuItem onClick={() => handleEditStudent(student)}>
                           Edit Student
                         </DropdownMenuItem>
-                        {student.status !== 'suspended' && (
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => handleSuspendStudent(student)}
-                          >
-                            Suspend Student
-                          </DropdownMenuItem>
+                        {student.status === 'active' && (
+                          <>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleSuspendStudent(student)}
+                            >
+                              Suspend Student
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-gray-600"
+                              onClick={() => handleInactivateStudent(student)}
+                            >
+                              Mark Inactive
+                            </DropdownMenuItem>
+                          </>
                         )}
-                        {student.status === 'suspended' && (
+                        {(student.status === 'suspended' || student.status === 'inactive') && (
                           <DropdownMenuItem 
                             className="text-green-600"
-                            onClick={() => {/* TODO: Implement reactivate */}}
+                            onClick={() => handleReactivateStudent(student)}
                           >
                             Reactivate Student
                           </DropdownMenuItem>
                         )}
+
                         <DropdownMenuItem 
                           className="text-red-600"
                           onClick={() => handleDeleteStudent(student)}
@@ -1157,6 +1260,102 @@ export default function StudentList() {
               disabled={deleteStudentMutation.isPending}
             >
               {deleteStudentMutation.isPending ? 'Deleting...' : 'Delete Student'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reactivate Student Dialog */}
+      <Dialog open={isReactivateDialogOpen} onOpenChange={setIsReactivateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reactivate Student</DialogTitle>
+            <DialogDescription>
+              You are about to reactivate {selectedStudent?.user?.firstName} {selectedStudent?.user?.lastName} 
+              ({selectedStudent?.studentId}). Please provide a reason for this action.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for Reactivation *
+              </label>
+              <textarea
+                value={reactivationReason}
+                onChange={(e) => setReactivationReason(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-burgundy-500 focus:border-transparent"
+                rows={4}
+                placeholder="Please provide a detailed reason for reactivation..."
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsReactivateDialogOpen(false);
+                setReactivationReason('');
+                setSelectedStudent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmReactivation}
+              disabled={reactivateStudentMutation.isPending || !reactivationReason.trim()}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {reactivateStudentMutation.isPending ? 'Reactivating...' : 'Confirm Reactivation'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Inactivate Student Dialog */}
+      <Dialog open={isInactivateDialogOpen} onOpenChange={setIsInactivateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Student Inactive</DialogTitle>
+            <DialogDescription>
+              You are about to mark {selectedStudent?.user?.firstName} {selectedStudent?.user?.lastName} 
+              ({selectedStudent?.studentId}) as inactive. Please provide a reason for this action.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for Inactivation *
+              </label>
+              <textarea
+                value={inactivationReason}
+                onChange={(e) => setInactivationReason(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-burgundy-500 focus:border-transparent"
+                rows={4}
+                placeholder="Please provide a detailed reason for marking this student as inactive..."
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsInactivateDialogOpen(false);
+                setInactivationReason('');
+                setSelectedStudent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmInactivation}
+              disabled={inactivateStudentMutation.isPending || !inactivationReason.trim()}
+              className="bg-gray-600 hover:bg-gray-700 text-white"
+            >
+              {inactivateStudentMutation.isPending ? 'Marking Inactive...' : 'Confirm Inactivation'}
             </Button>
           </div>
         </DialogContent>

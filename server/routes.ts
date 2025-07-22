@@ -292,6 +292,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add reactivation endpoint
+  app.post("/api/students/:id/reactivate", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reason } = req.body;
+      const adminId = (req as any).user.id;
+      
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: "Reactivation reason is required" });
+      }
+      
+      const result = await storage.reactivateStudent(id, reason.trim(), adminId);
+      res.json(result);
+    } catch (error) {
+      console.error("Reactivate student error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Add inactivation endpoint
+  app.post("/api/students/:id/inactivate", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reason } = req.body;
+      const adminId = (req as any).user.id;
+      
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: "Inactivation reason is required" });
+      }
+      
+      const result = await storage.inactivateStudent(id, reason.trim(), adminId);
+      res.json(result);
+    } catch (error) {
+      console.error("Inactivate student error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.put("/api/students/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

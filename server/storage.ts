@@ -1,9 +1,11 @@
 import {
-  users, students, faculty, departments, courses, enrollments, attendance,
-  exams, submissions, admissions, userPrivileges,
+  users, students, faculty, departments, academicPrograms, intakes, groups, terms, subjects, schedules,
+  enrollments, attendance, exams, submissions, admissions, userPrivileges,
   type User, type InsertUser, type Student, type InsertStudent,
   type Faculty, type InsertFaculty, type Department, type InsertDepartment,
-  type Course, type InsertCourse, type Enrollment, type InsertEnrollment,
+  type AcademicProgram, type InsertAcademicProgram, type Intake, type InsertIntake,
+  type Group, type InsertGroup, type Term, type InsertTerm, type Subject, type InsertSubject,
+  type Schedule, type InsertSchedule, type Enrollment, type InsertEnrollment,
   type Attendance, type InsertAttendance, type Exam, type InsertExam,
   type Submission, type InsertSubmission, type Admission, type InsertAdmission,
   type UserPrivilege, type InsertUserPrivilege
@@ -29,6 +31,8 @@ export interface IStorage {
   createStudent(student: InsertStudent): Promise<Student>;
   updateStudent(id: number, student: Partial<InsertStudent>): Promise<Student | undefined>;
   suspendStudent(id: number, reason: string, adminId: number): Promise<Student | undefined>;
+  reactivateStudent(id: number, reason: string, adminId: number): Promise<Student | undefined>;
+  inactivateStudent(id: number, reason: string, adminId: number): Promise<Student | undefined>;
   generateNextCCLId(): Promise<string>;
 
   // Student Requests
@@ -47,10 +51,35 @@ export interface IStorage {
   getDepartmentById(id: number): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
 
-  // Courses
-  getCourses(departmentId?: number): Promise<Course[]>;
-  getCourseById(id: number): Promise<Course | undefined>;
-  createCourse(course: InsertCourse): Promise<Course>;
+  // Academic Programs
+  getAcademicPrograms(departmentId?: number): Promise<AcademicProgram[]>;
+  getAcademicProgramById(id: number): Promise<AcademicProgram | undefined>;
+  createAcademicProgram(program: InsertAcademicProgram): Promise<AcademicProgram>;
+  
+  // Intakes
+  getIntakes(programId?: number): Promise<Intake[]>;
+  getIntakeById(id: number): Promise<Intake | undefined>;
+  createIntake(intake: InsertIntake): Promise<Intake>;
+  
+  // Groups
+  getGroups(intakeId?: number): Promise<Group[]>;
+  getGroupById(id: number): Promise<Group | undefined>;
+  createGroup(group: InsertGroup): Promise<Group>;
+  
+  // Terms
+  getTerms(): Promise<Term[]>;
+  getTermById(id: number): Promise<Term | undefined>;
+  createTerm(term: InsertTerm): Promise<Term>;
+  
+  // Subjects
+  getSubjects(termId?: number): Promise<Subject[]>;
+  getSubjectById(id: number): Promise<Subject | undefined>;
+  createSubject(subject: InsertSubject): Promise<Subject>;
+  
+  // Schedules
+  getSchedules(groupId?: number, subjectId?: number): Promise<Schedule[]>;
+  getScheduleById(id: number): Promise<Schedule | undefined>;
+  createSchedule(schedule: InsertSchedule): Promise<Schedule>;
 
   // Enrollments
   getEnrollments(studentId?: number, facultyId?: number): Promise<Enrollment[]>;
@@ -214,6 +243,74 @@ export class DatabaseStorage implements IStorage {
     return updatedStudent || undefined;
   }
 
+  async reactivateStudent(id: number, reason: string, adminId: number): Promise<Student | undefined> {
+    const currentStudent = await db
+      .select()
+      .from(students)
+      .where(eq(students.id, id))
+      .limit(1);
+    
+    if (currentStudent.length === 0) {
+      throw new Error("Student not found");
+    }
+
+    const student = currentStudent[0];
+    const reactivationRecord = {
+      date: new Date().toISOString(),
+      action: 'reactivated',
+      reason,
+      adminId,
+    };
+
+    const currentHistory = (student.suspensionHistory as any[]) || [];
+    const updatedHistory = [...currentHistory, reactivationRecord];
+
+    const [updatedStudent] = await db
+      .update(students)
+      .set({
+        status: 'active',
+        suspensionHistory: updatedHistory
+      })
+      .where(eq(students.id, id))
+      .returning();
+    
+    return updatedStudent || undefined;
+  }
+
+  async inactivateStudent(id: number, reason: string, adminId: number): Promise<Student | undefined> {
+    const currentStudent = await db
+      .select()
+      .from(students)
+      .where(eq(students.id, id))
+      .limit(1);
+    
+    if (currentStudent.length === 0) {
+      throw new Error("Student not found");
+    }
+
+    const student = currentStudent[0];
+    const inactivationRecord = {
+      date: new Date().toISOString(),
+      action: 'inactivated',
+      reason,
+      adminId,
+    };
+
+    const currentHistory = (student.suspensionHistory as any[]) || [];
+    const updatedHistory = [...currentHistory, inactivationRecord];
+
+    const [updatedStudent] = await db
+      .update(students)
+      .set({
+        status: 'inactive',
+        suspensionHistory: updatedHistory
+      })
+      .where(eq(students.id, id))
+      .returning();
+    
+    return updatedStudent || undefined;
+  }
+
   async generateNextCCLId(): Promise<string> {
     try {
       // Get current year (last 2 digits)
@@ -349,21 +446,115 @@ export class DatabaseStorage implements IStorage {
     return newDepartment;
   }
 
-  async getCourses(departmentId?: number): Promise<Course[]> {
+  // Academic Programs implementation
+  async getAcademicPrograms(departmentId?: number): Promise<AcademicProgram[]> {
     if (departmentId) {
-      return await db.select().from(courses).where(eq(courses.departmentId, departmentId));
+      return await db.select().from(academicPrograms).where(eq(academicPrograms.departmentId, departmentId));
     }
-    return await db.select().from(courses);
+    return await db.select().from(academicPrograms);
   }
 
-  async getCourseById(id: number): Promise<Course | undefined> {
-    const [course] = await db.select().from(courses).where(eq(courses.id, id));
-    return course || undefined;
+  async getAcademicProgramById(id: number): Promise<AcademicProgram | undefined> {
+    const [program] = await db.select().from(academicPrograms).where(eq(academicPrograms.id, id));
+    return program || undefined;
   }
 
-  async createCourse(course: InsertCourse): Promise<Course> {
-    const [newCourse] = await db.insert(courses).values(course).returning();
-    return newCourse;
+  async createAcademicProgram(program: InsertAcademicProgram): Promise<AcademicProgram> {
+    const [newProgram] = await db.insert(academicPrograms).values(program).returning();
+    return newProgram;
+  }
+
+  // Intakes implementation
+  async getIntakes(programId?: number): Promise<Intake[]> {
+    if (programId) {
+      return await db.select().from(intakes).where(eq(intakes.programId, programId));
+    }
+    return await db.select().from(intakes);
+  }
+
+  async getIntakeById(id: number): Promise<Intake | undefined> {
+    const [intake] = await db.select().from(intakes).where(eq(intakes.id, id));
+    return intake || undefined;
+  }
+
+  async createIntake(intake: InsertIntake): Promise<Intake> {
+    const [newIntake] = await db.insert(intakes).values(intake).returning();
+    return newIntake;
+  }
+
+  // Groups implementation
+  async getGroups(intakeId?: number): Promise<Group[]> {
+    if (intakeId) {
+      return await db.select().from(groups).where(eq(groups.intakeId, intakeId));
+    }
+    return await db.select().from(groups);
+  }
+
+  async getGroupById(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group || undefined;
+  }
+
+  async createGroup(group: InsertGroup): Promise<Group> {
+    const [newGroup] = await db.insert(groups).values(group).returning();
+    return newGroup;
+  }
+
+  // Terms implementation
+  async getTerms(): Promise<Term[]> {
+    return await db.select().from(terms);
+  }
+
+  async getTermById(id: number): Promise<Term | undefined> {
+    const [term] = await db.select().from(terms).where(eq(terms.id, id));
+    return term || undefined;
+  }
+
+  async createTerm(term: InsertTerm): Promise<Term> {
+    const [newTerm] = await db.insert(terms).values(term).returning();
+    return newTerm;
+  }
+
+  // Subjects implementation
+  async getSubjects(termId?: number): Promise<Subject[]> {
+    if (termId) {
+      return await db.select().from(subjects).where(eq(subjects.termId, termId));
+    }
+    return await db.select().from(subjects);
+  }
+
+  async getSubjectById(id: number): Promise<Subject | undefined> {
+    const [subject] = await db.select().from(subjects).where(eq(subjects.id, id));
+    return subject || undefined;
+  }
+
+  async createSubject(subject: InsertSubject): Promise<Subject> {
+    const [newSubject] = await db.insert(subjects).values(subject).returning();
+    return newSubject;
+  }
+
+  // Schedules implementation
+  async getSchedules(groupId?: number, subjectId?: number): Promise<Schedule[]> {
+    let query = db.select().from(schedules);
+    
+    if (groupId) {
+      query = query.where(eq(schedules.groupId, groupId));
+    }
+    if (subjectId) {
+      query = query.where(eq(schedules.subjectId, subjectId));
+    }
+    
+    return await query;
+  }
+
+  async getScheduleById(id: number): Promise<Schedule | undefined> {
+    const [schedule] = await db.select().from(schedules).where(eq(schedules.id, id));
+    return schedule || undefined;
+  }
+
+  async createSchedule(schedule: InsertSchedule): Promise<Schedule> {
+    const [newSchedule] = await db.insert(schedules).values(schedule).returning();
+    return newSchedule;
   }
 
   async getEnrollments(studentId?: number, facultyId?: number): Promise<Enrollment[]> {

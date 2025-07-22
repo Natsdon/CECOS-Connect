@@ -33,9 +33,7 @@ export const students = pgTable("students", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   studentId: varchar("student_id", { length: 20 }).notNull().unique(),
-  departmentId: integer("department_id").references(() => departments.id),
-  year: integer("year"),
-  semester: integer("semester"),
+  groupId: integer("group_id").references(() => groups.id), // Changed from departmentId to groupId
   enrollmentDate: timestamp("enrollment_date").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, graduated, suspended
   cgpa: decimal("cgpa", { precision: 3, scale: 2 }),
@@ -55,25 +53,91 @@ export const faculty = pgTable("faculty", {
   qualifications: text("qualifications"),
 });
 
-// Courses table
-export const courses = pgTable("courses", {
+// Academic Programs (Courses like Computer Science, Business Administration)
+export const academicPrograms = pgTable("academic_programs", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 20 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   departmentId: integer("department_id").notNull().references(() => departments.id),
-  credits: integer("credits").notNull(),
+  duration: integer("duration").notNull(), // Duration in years
   description: text("description"),
-  prerequisites: jsonb("prerequisites"), // Array of course IDs
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Course enrollments
+// Intakes within programs (e.g., Fall 2024, Spring 2025)
+export const intakes = pgTable("intakes", {
+  id: serial("id").primaryKey(),
+  programId: integer("program_id").notNull().references(() => academicPrograms.id),
+  name: varchar("name", { length: 50 }).notNull(), // e.g., "Fall 2024"
+  code: varchar("code", { length: 20 }).notNull(), // e.g., "F24"
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  registrationStartDate: timestamp("registration_start_date").notNull(),
+  registrationEndDate: timestamp("registration_end_date").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  maxStudents: integer("max_students"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Groups within intakes (e.g., Group A, Group B)
+export const groups = pgTable("groups", {
+  id: serial("id").primaryKey(),
+  intakeId: integer("intake_id").notNull().references(() => intakes.id),
+  name: varchar("name", { length: 50 }).notNull(), // e.g., "Group A"
+  code: varchar("code", { length: 20 }).notNull(), // e.g., "CS-F24-A"
+  maxStudents: integer("max_students").notNull().default(30),
+  currentStudents: integer("current_students").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Terms/Semesters for academic calendar
+export const terms = pgTable("terms", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(), // e.g., "Year 1 - Semester 1"
+  code: varchar("code", { length: 20 }).notNull(), // e.g., "Y1S1"
+  yearLevel: integer("year_level").notNull(), // 1, 2, 3, 4
+  semester: integer("semester").notNull(), // 1, 2
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Subjects/Courses within terms
+export const subjects = pgTable("subjects", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  credits: integer("credits").notNull(),
+  description: text("description"),
+  termId: integer("term_id").notNull().references(() => terms.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Class schedules for groups and subjects
+export const schedules = pgTable("schedules", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id),
+  subjectId: integer("subject_id").notNull().references(() => subjects.id),
+  facultyId: integer("faculty_id").notNull().references(() => faculty.id),
+  dayOfWeek: integer("day_of_week").notNull(), // 0=Sunday, 1=Monday, etc.
+  startTime: varchar("start_time", { length: 8 }).notNull(), // HH:MM:SS format
+  endTime: varchar("end_time", { length: 8 }).notNull(),
+  room: varchar("room", { length: 50 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Subject enrollments (students enrolled in specific subjects)
 export const enrollments = pgTable("enrollments", {
   id: serial("id").primaryKey(),
   studentId: integer("student_id").notNull().references(() => students.id),
-  courseId: integer("course_id").notNull().references(() => courses.id),
-  facultyId: integer("faculty_id").notNull().references(() => faculty.id),
-  semester: varchar("semester", { length: 20 }).notNull(),
-  year: integer("year").notNull(),
+  subjectId: integer("subject_id").notNull().references(() => subjects.id),
+  scheduleId: integer("schedule_id").notNull().references(() => schedules.id),
+  termId: integer("term_id").notNull().references(() => terms.id),
   status: varchar("status", { length: 20 }).notNull().default("enrolled"), // enrolled, dropped, completed
   grade: varchar("grade", { length: 5 }),
   gradePoints: decimal("grade_points", { precision: 3, scale: 2 }),
@@ -94,7 +158,8 @@ export const attendance = pgTable("attendance", {
 // Exams table
 export const exams = pgTable("exams", {
   id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull().references(() => courses.id),
+  subjectId: integer("subject_id").notNull().references(() => subjects.id),
+  groupId: integer("group_id").notNull().references(() => groups.id),
   title: varchar("title", { length: 100 }).notNull(),
   type: varchar("type", { length: 20 }).notNull(), // midterm, final, quiz, assignment
   totalMarks: integer("total_marks").notNull(),
@@ -163,12 +228,12 @@ export const departmentsRelations = relations(departments, ({ one, many }) => ({
   head: one(users, { fields: [departments.headId], references: [users.id] }),
   students: many(students),
   faculty: many(faculty),
-  courses: many(courses),
+  academicPrograms: many(academicPrograms),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
   user: one(users, { fields: [students.userId], references: [users.id] }),
-  department: one(departments, { fields: [students.departmentId], references: [departments.id] }),
+  group: one(groups, { fields: [students.groupId], references: [groups.id] }),
   enrollments: many(enrollments),
   submissions: many(submissions),
 }));
@@ -176,20 +241,52 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
 export const facultyRelations = relations(faculty, ({ one, many }) => ({
   user: one(users, { fields: [faculty.userId], references: [users.id] }),
   department: one(departments, { fields: [faculty.departmentId], references: [departments.id] }),
+  schedules: many(schedules),
+  exams: many(exams),
+}));
+
+// Academic Program Relations
+export const academicProgramsRelations = relations(academicPrograms, ({ one, many }) => ({
+  department: one(departments, { fields: [academicPrograms.departmentId], references: [departments.id] }),
+  intakes: many(intakes),
+}));
+
+export const intakesRelations = relations(intakes, ({ one, many }) => ({
+  program: one(academicPrograms, { fields: [intakes.programId], references: [academicPrograms.id] }),
+  groups: many(groups),
+}));
+
+export const groupsRelations = relations(groups, ({ one, many }) => ({
+  intake: one(intakes, { fields: [groups.intakeId], references: [intakes.id] }),
+  students: many(students),
+  schedules: many(schedules),
+  exams: many(exams),
+}));
+
+export const termsRelations = relations(terms, ({ many }) => ({
+  subjects: many(subjects),
+  enrollments: many(enrollments),
+}));
+
+export const subjectsRelations = relations(subjects, ({ one, many }) => ({
+  term: one(terms, { fields: [subjects.termId], references: [terms.id] }),
+  schedules: many(schedules),
   enrollments: many(enrollments),
   exams: many(exams),
 }));
 
-export const coursesRelations = relations(courses, ({ one, many }) => ({
-  department: one(departments, { fields: [courses.departmentId], references: [departments.id] }),
+export const schedulesRelations = relations(schedules, ({ one, many }) => ({
+  group: one(groups, { fields: [schedules.groupId], references: [groups.id] }),
+  subject: one(subjects, { fields: [schedules.subjectId], references: [subjects.id] }),
+  faculty: one(faculty, { fields: [schedules.facultyId], references: [faculty.id] }),
   enrollments: many(enrollments),
-  exams: many(exams),
 }));
 
 export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
   student: one(students, { fields: [enrollments.studentId], references: [students.id] }),
-  course: one(courses, { fields: [enrollments.courseId], references: [courses.id] }),
-  faculty: one(faculty, { fields: [enrollments.facultyId], references: [faculty.id] }),
+  subject: one(subjects, { fields: [enrollments.subjectId], references: [subjects.id] }),
+  schedule: one(schedules, { fields: [enrollments.scheduleId], references: [schedules.id] }),
+  term: one(terms, { fields: [enrollments.termId], references: [terms.id] }),
   attendance: many(attendance),
 }));
 
@@ -199,7 +296,8 @@ export const attendanceRelations = relations(attendance, ({ one }) => ({
 }));
 
 export const examsRelations = relations(exams, ({ one, many }) => ({
-  course: one(courses, { fields: [exams.courseId], references: [courses.id] }),
+  subject: one(subjects, { fields: [exams.subjectId], references: [subjects.id] }),
+  group: one(groups, { fields: [exams.groupId], references: [groups.id] }),
   createdBy: one(faculty, { fields: [exams.createdBy], references: [faculty.id] }),
   submissions: many(submissions),
 }));
@@ -242,8 +340,34 @@ export const insertFacultySchema = createInsertSchema(faculty).omit({
   id: true,
 });
 
-export const insertCourseSchema = createInsertSchema(courses).omit({
+export const insertAcademicProgramSchema = createInsertSchema(academicPrograms).omit({
   id: true,
+  createdAt: true,
+});
+
+export const insertIntakeSchema = createInsertSchema(intakes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGroupSchema = createInsertSchema(groups).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTermSchema = createInsertSchema(terms).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSubjectSchema = createInsertSchema(subjects).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertScheduleSchema = createInsertSchema(schedules).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({
@@ -286,8 +410,18 @@ export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Faculty = typeof faculty.$inferSelect;
 export type InsertFaculty = z.infer<typeof insertFacultySchema>;
-export type Course = typeof courses.$inferSelect;
-export type InsertCourse = z.infer<typeof insertCourseSchema>;
+export type AcademicProgram = typeof academicPrograms.$inferSelect;
+export type InsertAcademicProgram = z.infer<typeof insertAcademicProgramSchema>;
+export type Intake = typeof intakes.$inferSelect;
+export type InsertIntake = z.infer<typeof insertIntakeSchema>;
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
+export type Term = typeof terms.$inferSelect;
+export type InsertTerm = z.infer<typeof insertTermSchema>;
+export type Subject = typeof subjects.$inferSelect;
+export type InsertSubject = z.infer<typeof insertSubjectSchema>;
+export type Schedule = typeof schedules.$inferSelect;
+export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type Enrollment = typeof enrollments.$inferSelect;
 export type InsertEnrollment = z.infer<typeof insertEnrollmentSchema>;
 export type Attendance = typeof attendance.$inferSelect;
