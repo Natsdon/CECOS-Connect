@@ -218,22 +218,27 @@ export class DatabaseStorage implements IStorage {
     // Get current year (last 2 digits)
     const currentYear = new Date().getFullYear();
     const yearSuffix = currentYear.toString().slice(-2);
+    const pattern = `CCL-${yearSuffix}-%`;
     
-    // Find the highest CCL ID for this year
+    // Find all CCL IDs for this year using ilike for case-insensitive matching
     const existingStudents = await db
       .select({ studentId: students.studentId })
       .from(students)
-      .where(sql`${students.studentId} LIKE 'CCL-${yearSuffix}-%'`)
-      .orderBy(sql`${students.studentId} DESC`)
-      .limit(1);
+      .where(ilike(students.studentId, pattern));
     
     let nextNumber = 1;
     
     if (existingStudents.length > 0) {
-      const lastId = existingStudents[0].studentId;
-      const match = lastId.match(/CCL-\d{2}-(\d{4})$/);
-      if (match) {
-        nextNumber = parseInt(match[1]) + 1;
+      // Extract numbers from all matching CCL IDs and find the highest
+      const numbers = existingStudents
+        .map(student => {
+          const match = student.studentId.match(/CCL-\d{2}-(\d{4})$/);
+          return match ? parseInt(match[1]) : 0;
+        })
+        .filter(num => num > 0);
+      
+      if (numbers.length > 0) {
+        nextNumber = Math.max(...numbers) + 1;
       }
     }
     
