@@ -111,7 +111,7 @@ export default function StudentList() {
   // Auto-generate CCL ID function
   const generateCCLId = async () => {
     try {
-      const response: any = await apiRequest('/api/students/next-ccl-id', 'GET');
+      const response: any = await apiRequest('/api/students/next-ccl-id', 'GET').then(res => res.json());
       form.setValue('cclId', response.cclId);
     } catch (error) {
       console.error('Error generating CCL ID:', error);
@@ -139,7 +139,7 @@ export default function StudentList() {
         password: data.password,
         role: 'student'
       };
-      const user: any = await apiRequest('/api/auth/register', 'POST', userData);
+      const user: any = await apiRequest('/api/auth/register', 'POST', userData).then(res => res.json());
       
       // Then create the student record
       const studentData = {
@@ -149,7 +149,7 @@ export default function StudentList() {
         status: 'active',
         totalCredits: 0
       };
-      return apiRequest('/api/students', 'POST', studentData);
+      return apiRequest('/api/students', 'POST', studentData).then(res => res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/students/detailed'] });

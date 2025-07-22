@@ -52,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await apiRequest('POST', '/api/auth/login', {
+      const response = await apiRequest('/api/auth/login', 'POST', {
         username,
         password,
       });
