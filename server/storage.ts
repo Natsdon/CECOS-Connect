@@ -29,6 +29,7 @@ export interface IStorage {
   createStudent(student: InsertStudent): Promise<Student>;
   updateStudent(id: number, student: Partial<InsertStudent>): Promise<Student | undefined>;
   suspendStudent(id: number, reason: string, adminId: number): Promise<Student | undefined>;
+  generateNextCCLId(): Promise<string>;
 
   // Student Requests
   getStudentRequests(filters?: { status?: string; type?: string }): Promise<any[]>;
@@ -211,6 +212,34 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedStudent || undefined;
+  }
+
+  async generateNextCCLId(): Promise<string> {
+    // Get current year (last 2 digits)
+    const currentYear = new Date().getFullYear();
+    const yearSuffix = currentYear.toString().slice(-2);
+    
+    // Find the highest CCL ID for this year
+    const existingStudents = await db
+      .select({ studentId: students.studentId })
+      .from(students)
+      .where(sql`${students.studentId} LIKE 'CCL-${yearSuffix}-%'`)
+      .orderBy(sql`${students.studentId} DESC`)
+      .limit(1);
+    
+    let nextNumber = 1;
+    
+    if (existingStudents.length > 0) {
+      const lastId = existingStudents[0].studentId;
+      const match = lastId.match(/CCL-\d{2}-(\d{4})$/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    
+    // Format as 4-digit number with leading zeros
+    const formattedNumber = nextNumber.toString().padStart(4, '0');
+    return `CCL-${yearSuffix}-${formattedNumber}`;
   }
 
   async getStudentsWithUserDetails(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<any[]> {
