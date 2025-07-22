@@ -107,9 +107,9 @@ export default function StudentList() {
       lastName: '',
       email: '',
       phoneNumber: '',
-      departmentId: '',
-      year: '',
-      semester: '',
+      departmentId: 'none',
+      year: 'none',
+      semester: 'none',
       status: 'active',
     },
   });
@@ -220,9 +220,9 @@ export default function StudentList() {
 
       // Update student information
       const studentUpdateData = {
-        departmentId: data.departmentId ? parseInt(data.departmentId) : null,
-        year: data.year ? parseInt(data.year) : null,
-        semester: data.semester ? parseInt(data.semester) : null,
+        departmentId: data.departmentId && data.departmentId !== 'none' ? parseInt(data.departmentId) : null,
+        year: data.year && data.year !== 'none' ? parseInt(data.year) : null,
+        semester: data.semester && data.semester !== 'none' ? parseInt(data.semester) : null,
         status: data.status,
       };
       return apiRequest(`/api/students/${selectedStudent.id}`, 'PUT', studentUpdateData).then(res => res.json());
@@ -315,9 +315,9 @@ export default function StudentList() {
       lastName: student.user?.lastName || '',
       email: student.user?.email || '',
       phoneNumber: student.user?.phoneNumber || '',
-      departmentId: student.departmentId?.toString() || '',
-      year: student.year?.toString() || '',
-      semester: student.semester?.toString() || '',
+      departmentId: student.departmentId?.toString() || 'none',
+      year: student.year?.toString() || 'none',
+      semester: student.semester?.toString() || 'none',
       status: student.status || 'active',
     });
     setIsEditDialogOpen(true);
@@ -1022,7 +1022,7 @@ export default function StudentList() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">No Department</SelectItem>
+                            <SelectItem value="none">No Department</SelectItem>
                             {departments.map((dept: any) => (
                               <SelectItem key={dept.id} value={dept.id.toString()}>
                                 {dept.name}
@@ -1048,7 +1048,7 @@ export default function StudentList() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Not Set</SelectItem>
+                            <SelectItem value="none">Not Set</SelectItem>
                             <SelectItem value="1">1st Year</SelectItem>
                             <SelectItem value="2">2nd Year</SelectItem>
                             <SelectItem value="3">3rd Year</SelectItem>
@@ -1073,7 +1073,7 @@ export default function StudentList() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Not Set</SelectItem>
+                            <SelectItem value="none">Not Set</SelectItem>
                             <SelectItem value="1">1st Semester</SelectItem>
                             <SelectItem value="2">2nd Semester</SelectItem>
                           </SelectContent>
