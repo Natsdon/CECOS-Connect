@@ -549,33 +549,35 @@ export default function StudentProfile({ studentId, onClose }: StudentProfilePro
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Add notes about this student..."
-                        className="min-h-[200px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end mt-4">
-                <Button
-                  onClick={form.handleSubmit(onSubmit)}
-                  disabled={updateStudentMutation.isPending}
-                  className="flex items-center space-x-2"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{updateStudentMutation.isPending ? 'Saving...' : 'Save Notes'}</span>
-                </Button>
-              </div>
+              <Form {...form}>
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Add notes about this student..."
+                          className="min-h-[200px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end mt-4">
+                  <Button
+                    onClick={form.handleSubmit(onSubmit)}
+                    disabled={updateStudentMutation.isPending}
+                    className="flex items-center space-x-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{updateStudentMutation.isPending ? 'Saving...' : 'Save Notes'}</span>
+                  </Button>
+                </div>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
