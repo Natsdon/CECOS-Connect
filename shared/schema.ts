@@ -34,6 +34,9 @@ export const students = pgTable("students", {
   userId: integer("user_id").notNull().references(() => users.id),
   studentId: varchar("student_id", { length: 20 }).notNull().unique(),
   groupId: integer("group_id").references(() => groups.id), // Changed from departmentId to groupId
+  departmentId: integer("department_id").references(() => departments.id), // Legacy support
+  year: integer("year"),
+  semester: integer("semester"),
   enrollmentDate: timestamp("enrollment_date").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, graduated, suspended
   cgpa: decimal("cgpa", { precision: 3, scale: 2 }),
@@ -234,6 +237,7 @@ export const departmentsRelations = relations(departments, ({ one, many }) => ({
 export const studentsRelations = relations(students, ({ one, many }) => ({
   user: one(users, { fields: [students.userId], references: [users.id] }),
   group: one(groups, { fields: [students.groupId], references: [groups.id] }),
+  department: one(departments, { fields: [students.departmentId], references: [departments.id] }),
   enrollments: many(enrollments),
   submissions: many(submissions),
 }));
