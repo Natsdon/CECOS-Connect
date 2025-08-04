@@ -422,9 +422,8 @@ export default function AcademicStructure() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="overview">Hierarchical View</TabsTrigger>
-          <TabsTrigger value="terms">Terms Management</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-1">
+          <TabsTrigger value="overview">Academic Structure</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -505,31 +504,64 @@ export default function AcademicStructure() {
                               </div>
                             </CollapsibleTrigger>
                             
-                            <CollapsibleContent className="mt-3 ml-8 space-y-2">
-                              {getFilteredGroupsForIntake(intake.id).map((group) => (
-                                <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                  <div className="flex items-center space-x-3">
-                                    <Users className="w-4 h-4 text-green-600" />
-                                    <div>
-                                      <div className="font-medium text-gray-900">{group.name}</div>
-                                      <div className="text-sm text-gray-500">
-                                        Capacity: {(group as any).capacity || 30} students
+                            <CollapsibleContent className="mt-3 ml-8 space-y-4">
+                              {/* Terms Section */}
+                              <div className="border-l-2 border-purple-200 pl-4">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <BookOpen className="w-4 h-4 text-purple-600" />
+                                  <h4 className="font-medium text-gray-900">Terms</h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {getFilteredTerms().map((term) => (
+                                    <div key={term.id} className="border rounded-lg p-3 bg-purple-50">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <h5 className="font-semibold text-gray-900">{term.name}</h5>
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
+                                          <Edit2 className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                      <div className="text-sm text-gray-600 space-y-1">
+                                        <div>Term {term.number}</div>
+                                        <div>{term.credits} credits</div>
                                       </div>
                                     </div>
-                                    <Badge variant={group.isActive ? "default" : "secondary"}>
-                                      {group.isActive ? "Active" : "Inactive"}
-                                    </Badge>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
-                                      <Edit2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
+                                  ))}
                                 </div>
-                              ))}
-                              {getFilteredGroupsForIntake(intake.id).length === 0 && (
-                                <div className="text-sm text-gray-400 italic">No groups created yet</div>
-                              )}
+                              </div>
+
+                              {/* Groups Section */}
+                              <div className="border-l-2 border-green-200 pl-4">
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <Users className="w-4 h-4 text-green-600" />
+                                  <h4 className="font-medium text-gray-900">Student Groups</h4>
+                                </div>
+                                <div className="space-y-2">
+                                  {getFilteredGroupsForIntake(intake.id).map((group) => (
+                                    <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                      <div className="flex items-center space-x-3">
+                                        <Users className="w-4 h-4 text-green-600" />
+                                        <div>
+                                          <div className="font-medium text-gray-900">{group.name}</div>
+                                          <div className="text-sm text-gray-500">
+                                            Capacity: {(group as any).capacity || 30} students
+                                          </div>
+                                        </div>
+                                        <Badge variant={group.isActive ? "default" : "secondary"}>
+                                          {group.isActive ? "Active" : "Inactive"}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
+                                          <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {getFilteredGroupsForIntake(intake.id).length === 0 && (
+                                    <div className="text-sm text-gray-400 italic">No groups created yet</div>
+                                  )}
+                                </div>
+                              </div>
                             </CollapsibleContent>
                           </Collapsible>
                         </div>
@@ -545,39 +577,7 @@ export default function AcademicStructure() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="terms" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calendar className="w-5 h-5" />
-                <span>Academic Terms</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {getFilteredTerms().map((term) => (
-                  <div key={term.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-gray-900">{term.name}</h3>
-                      <Badge variant="default">
-                        Active
-                      </Badge>
-                    </div>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div>Term Number: {(term as any).number}</div>
-                      <div>Credits: {(term as any).credits}</div>
-                    </div>
-                    <div className="flex items-center space-x-2 mt-4">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
     </div>
   );
