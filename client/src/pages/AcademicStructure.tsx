@@ -79,6 +79,10 @@ export default function AcademicStructure() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEntity, setEditingEntity] = useState<any>(null);
   const [editingType, setEditingType] = useState<'program' | 'intake' | 'group' | 'term'>('program');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProgramFilter, setSelectedProgramFilter] = useState<string>('all');
+  const [selectedIntakeFilter, setSelectedIntakeFilter] = useState<string>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -130,6 +134,70 @@ export default function AcademicStructure() {
 
   const getGroupsForIntake = (intakeId: number) => {
     return groups?.filter(group => group.intakeId === intakeId) || [];
+  };
+
+  // Filter functions
+  const getFilteredPrograms = () => {
+    if (!programs) return [];
+    
+    return programs.filter(program => {
+      const matchesSearch = searchQuery === '' || 
+        program.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        program.code.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesProgramFilter = selectedProgramFilter === 'all' ||
+        selectedProgramFilter === program.id.toString();
+      
+      const matchesStatus = selectedStatusFilter === 'all' ||
+        (selectedStatusFilter === 'active' && program.isActive) ||
+        (selectedStatusFilter === 'inactive' && !program.isActive);
+      
+      return matchesSearch && matchesProgramFilter && matchesStatus;
+    });
+  };
+
+  const getFilteredIntakesForProgram = (programId: number) => {
+    const programIntakes = intakes?.filter(intake => intake.programId === programId) || [];
+    
+    return programIntakes.filter(intake => {
+      const matchesSearch = searchQuery === '' || 
+        intake.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesIntakeFilter = selectedIntakeFilter === 'all' ||
+        intake.name.toLowerCase().includes(selectedIntakeFilter.toLowerCase());
+      
+      const matchesStatus = selectedStatusFilter === 'all' ||
+        (selectedStatusFilter === 'active' && intake.isActive) ||
+        (selectedStatusFilter === 'inactive' && !intake.isActive);
+      
+      return matchesSearch && matchesIntakeFilter && matchesStatus;
+    });
+  };
+
+  const getFilteredGroupsForIntake = (intakeId: number) => {
+    const intakeGroups = groups?.filter(group => group.intakeId === intakeId) || [];
+    
+    return intakeGroups.filter(group => {
+      const matchesSearch = searchQuery === '' || 
+        group.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = selectedStatusFilter === 'all' ||
+        (selectedStatusFilter === 'active' && group.isActive) ||
+        (selectedStatusFilter === 'inactive' && !group.isActive);
+      
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  const getFilteredTerms = () => {
+    if (!terms) return [];
+    
+    return terms.filter(term => {
+      const matchesSearch = searchQuery === '' || 
+        term.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchesSearch;
+    });
   };
 
   // Edit handlers
@@ -209,9 +277,9 @@ export default function AcademicStructure() {
               type={createType} 
               setType={setCreateType}
               onClose={() => setIsCreateDialogOpen(false)}
-              departments={departments}
-              programs={programs}
-              intakes={intakes}
+              departments={departments as any}
+              programs={programs as any}
+              intakes={intakes as any}
             />
           </DialogContent>
         </Dialog>
@@ -226,9 +294,9 @@ export default function AcademicStructure() {
               type={editingType} 
               entity={editingEntity}
               onClose={() => setIsEditDialogOpen(false)}
-              departments={departments}
-              programs={programs}
-              intakes={intakes}
+              departments={departments as any}
+              programs={programs as any}
+              intakes={intakes as any}
             />
           </DialogContent>
         </Dialog>
@@ -286,6 +354,72 @@ export default function AcademicStructure() {
         </Card>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1">
+              <Input
+                placeholder="Search programs, intakes, groups, or terms..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={selectedProgramFilter} onValueChange={setSelectedProgramFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by program" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Programs</SelectItem>
+                  {programs?.map((program) => (
+                    <SelectItem key={program.id} value={program.id.toString()}>
+                      {program.code} - {program.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedIntakeFilter} onValueChange={setSelectedIntakeFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by intake" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Intakes</SelectItem>
+                  <SelectItem value="sep 25">Sep 25 Intakes</SelectItem>
+                  <SelectItem value="jan 26">Jan 26 Intakes</SelectItem>
+                  <SelectItem value="may 26">May 26 Intakes</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={selectedStatusFilter} onValueChange={setSelectedStatusFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {(searchQuery || selectedProgramFilter !== 'all' || selectedIntakeFilter !== 'all' || selectedStatusFilter !== 'all') && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedProgramFilter('all');
+                    setSelectedIntakeFilter('all');
+                    setSelectedStatusFilter('all');
+                  }}
+                  size="sm"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
@@ -302,7 +436,7 @@ export default function AcademicStructure() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {programs?.map((program) => (
+              {getFilteredPrograms().map((program) => (
                 <div key={program.id} className="border rounded-lg p-4">
                   <Collapsible 
                     open={expandedPrograms.has(program.id)}
@@ -338,7 +472,7 @@ export default function AcademicStructure() {
                     </CollapsibleTrigger>
                     
                     <CollapsibleContent className="mt-4 ml-8 space-y-3">
-                      {getIntakesForProgram(program.id).map((intake) => (
+                      {getFilteredIntakesForProgram(program.id).map((intake) => (
                         <div key={intake.id} className="border-l-2 border-blue-200 pl-4">
                           <Collapsible
                             open={expandedIntakes.has(intake.id)}
@@ -372,7 +506,7 @@ export default function AcademicStructure() {
                             </CollapsibleTrigger>
                             
                             <CollapsibleContent className="mt-3 ml-8 space-y-2">
-                              {getGroupsForIntake(intake.id).map((group) => (
+                              {getFilteredGroupsForIntake(intake.id).map((group) => (
                                 <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                   <div className="flex items-center space-x-3">
                                     <Users className="w-4 h-4 text-green-600" />
@@ -393,14 +527,14 @@ export default function AcademicStructure() {
                                   </div>
                                 </div>
                               ))}
-                              {getGroupsForIntake(intake.id).length === 0 && (
+                              {getFilteredGroupsForIntake(intake.id).length === 0 && (
                                 <div className="text-sm text-gray-400 italic">No groups created yet</div>
                               )}
                             </CollapsibleContent>
                           </Collapsible>
                         </div>
                       ))}
-                      {getIntakesForProgram(program.id).length === 0 && (
+                      {getFilteredIntakesForProgram(program.id).length === 0 && (
                         <div className="text-sm text-gray-400 italic">No intakes created yet</div>
                       )}
                     </CollapsibleContent>
@@ -421,7 +555,7 @@ export default function AcademicStructure() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {terms?.map((term) => (
+                {getFilteredTerms().map((term) => (
                   <div key={term.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-gray-900">{term.name}</h3>
