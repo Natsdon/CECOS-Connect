@@ -513,7 +513,7 @@ export default function AcademicStructure() {
                                     <div>
                                       <div className="font-medium text-gray-900">{group.name}</div>
                                       <div className="text-sm text-gray-500">
-                                        {group.currentStudents}/{group.maxStudents} students
+                                        Capacity: {group.capacity || 30} students
                                       </div>
                                     </div>
                                     <Badge variant={group.isActive ? "default" : "secondary"}>
