@@ -564,8 +564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const admission = await storage.updateAdmission(id, {
         status,
         reviewNotes,
-        reviewedBy,
-        reviewedAt: new Date()
+        reviewedBy
       });
       
       if (!admission) {

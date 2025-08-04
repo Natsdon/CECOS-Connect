@@ -168,19 +168,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudents(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<Student[]> {
-    let query = db.select().from(students);
+    const conditions = [];
     
     if (filters?.departmentId) {
-      query = query.where(eq(students.departmentId, filters.departmentId));
+      conditions.push(eq(students.departmentId, filters.departmentId));
     }
     if (filters?.year) {
-      query = query.where(eq(students.year, filters.year));
+      conditions.push(eq(students.year, filters.year));
     }
     if (filters?.status) {
-      query = query.where(eq(students.status, filters.status));
+      conditions.push(eq(students.status, filters.status));
     }
     
-    return await query;
+    if (conditions.length > 0) {
+      return await db.select().from(students).where(and(...conditions));
+    }
+    
+    return await db.select().from(students);
   }
 
   async getStudentById(id: number): Promise<Student | undefined> {
@@ -205,6 +209,27 @@ export class DatabaseStorage implements IStorage {
       .where(eq(students.id, id))
       .returning();
     return updatedStudent || undefined;
+  }
+
+  async deleteStudent(id: number): Promise<boolean> {
+    try {
+      // First get the student to find their user ID
+      const student = await this.getStudentById(id);
+      if (!student) {
+        throw new Error("Student not found");
+      }
+
+      // Delete the student record first (due to foreign key constraint)
+      await db.delete(students).where(eq(students.id, id));
+      
+      // Then delete the associated user record
+      await db.delete(users).where(eq(users.id, student.userId));
+      
+      return true;
+    } catch (error) {
+      console.error("Delete student error:", error);
+      throw error;
+    }
   }
 
   async suspendStudent(id: number, reason: string, adminId: number): Promise<Student | undefined> {
@@ -355,7 +380,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentsWithUserDetails(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<any[]> {
-    let query = db.select({
+    const conditions = [];
+    
+    if (filters?.departmentId) {
+      conditions.push(eq(students.departmentId, filters.departmentId));
+    }
+    if (filters?.year) {
+      conditions.push(eq(students.year, filters.year));
+    }
+    if (filters?.status) {
+      conditions.push(eq(students.status, filters.status));
+    }
+    
+    const query = db.select({
       id: students.id,
       userId: students.userId,
       studentId: students.studentId,
@@ -378,14 +415,8 @@ export class DatabaseStorage implements IStorage {
       }
     }).from(students).innerJoin(users, eq(students.userId, users.id));
     
-    if (filters?.departmentId) {
-      query = query.where(eq(students.departmentId, filters.departmentId));
-    }
-    if (filters?.year) {
-      query = query.where(eq(students.year, filters.year));
-    }
-    if (filters?.status) {
-      query = query.where(eq(students.status, filters.status));
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions));
     }
     
     return await query;
@@ -408,13 +439,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFaculty(filters?: { departmentId?: number; search?: string }): Promise<Faculty[]> {
-    let query = db.select().from(faculty);
-    
     if (filters?.departmentId) {
-      query = query.where(eq(faculty.departmentId, filters.departmentId));
+      return await db.select().from(faculty).where(eq(faculty.departmentId, filters.departmentId));
     }
     
-    return await query;
+    return await db.select().from(faculty);
   }
 
   async getFacultyById(id: number): Promise<Faculty | undefined> {
@@ -535,16 +564,20 @@ export class DatabaseStorage implements IStorage {
 
   // Schedules implementation
   async getSchedules(groupId?: number, subjectId?: number): Promise<Schedule[]> {
-    let query = db.select().from(schedules);
+    const conditions = [];
     
     if (groupId) {
-      query = query.where(eq(schedules.groupId, groupId));
+      conditions.push(eq(schedules.groupId, groupId));
     }
     if (subjectId) {
-      query = query.where(eq(schedules.subjectId, subjectId));
+      conditions.push(eq(schedules.subjectId, subjectId));
     }
     
-    return await query;
+    if (conditions.length > 0) {
+      return await db.select().from(schedules).where(and(...conditions));
+    }
+    
+    return await db.select().from(schedules);
   }
 
   async getScheduleById(id: number): Promise<Schedule | undefined> {
@@ -557,17 +590,12 @@ export class DatabaseStorage implements IStorage {
     return newSchedule;
   }
 
-  async getEnrollments(studentId?: number, facultyId?: number): Promise<Enrollment[]> {
-    let query = db.select().from(enrollments);
-    
+  async getEnrollments(studentId?: number): Promise<Enrollment[]> {
     if (studentId) {
-      query = query.where(eq(enrollments.studentId, studentId));
-    }
-    if (facultyId) {
-      query = query.where(eq(enrollments.facultyId, facultyId));
+      return await db.select().from(enrollments).where(eq(enrollments.studentId, studentId));
     }
     
-    return await query;
+    return await db.select().from(enrollments);
   }
 
   async createEnrollment(enrollment: InsertEnrollment): Promise<Enrollment> {
@@ -576,16 +604,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAttendance(enrollmentId: number, startDate?: Date, endDate?: Date): Promise<Attendance[]> {
-    let query = db.select().from(attendance).where(eq(attendance.enrollmentId, enrollmentId));
+    const conditions = [eq(attendance.enrollmentId, enrollmentId)];
     
     if (startDate) {
-      query = query.where(gte(attendance.date, startDate));
+      conditions.push(gte(attendance.date, startDate));
     }
     if (endDate) {
-      query = query.where(lte(attendance.date, endDate));
+      conditions.push(lte(attendance.date, endDate));
     }
     
-    return await query.orderBy(desc(attendance.date));
+    return await db.select().from(attendance).where(and(...conditions)).orderBy(desc(attendance.date));
   }
 
   async markAttendance(attendanceData: InsertAttendance): Promise<Attendance> {
@@ -749,184 +777,6 @@ export class DatabaseStorage implements IStorage {
       attendanceRate: Math.round(attendanceRate * 10) / 10,
       pendingApplications: pendingApplicationsResult.count,
     };
-  }
-  async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User | undefined> {
-    try {
-      const [updatedUser] = await db
-        .update(users)
-        .set(updateData)
-        .where(eq(users.id, id))
-        .returning();
-      
-      return updatedUser || undefined;
-    } catch (error) {
-      console.error("Update user error:", error);
-      throw error;
-    }
-  }
-
-  async updateStudent(id: number, updateData: Partial<InsertStudent>): Promise<Student | undefined> {
-    try {
-      const [updatedStudent] = await db
-        .update(students)
-        .set(updateData)
-        .where(eq(students.id, id))
-        .returning();
-      
-      return updatedStudent || undefined;
-    } catch (error) {
-      console.error("Update student error:", error);
-      throw error;
-    }
-  }
-
-  async deleteStudent(id: number): Promise<boolean> {
-    try {
-      // First get the student to find their user ID
-      const student = await this.getStudentById(id);
-      if (!student) {
-        throw new Error("Student not found");
-      }
-
-      // Delete the student record first (due to foreign key constraint)
-      await db.delete(students).where(eq(students.id, id));
-      
-      // Then delete the associated user record
-      await db.delete(users).where(eq(users.id, student.userId));
-      
-      return true;
-    } catch (error) {
-      console.error("Delete student error:", error);
-      throw error;
-    }
-  }
-  // Academic Programs
-  async getAcademicPrograms(departmentId?: number): Promise<AcademicProgram[]> {
-    let query = db.select().from(academicPrograms);
-    
-    if (departmentId) {
-      query = query.where(eq(academicPrograms.departmentId, departmentId));
-    }
-    
-    const programs = await query;
-    
-    // Add department information
-    const programsWithDepartment = await Promise.all(
-      programs.map(async (program) => {
-        const [dept] = await db.select().from(departments).where(eq(departments.id, program.departmentId));
-        return {
-          ...program,
-          department: dept ? { name: dept.name, code: dept.code } : undefined
-        };
-      })
-    );
-    
-    return programsWithDepartment;
-  }
-
-  async getAcademicProgramById(id: number): Promise<AcademicProgram | undefined> {
-    const [program] = await db.select().from(academicPrograms).where(eq(academicPrograms.id, id));
-    return program || undefined;
-  }
-
-  async createAcademicProgram(program: InsertAcademicProgram): Promise<AcademicProgram> {
-    const [newProgram] = await db
-      .insert(academicPrograms)
-      .values(program)
-      .returning();
-    return newProgram;
-  }
-
-  // Intakes
-  async getIntakes(programId?: number): Promise<Intake[]> {
-    let query = db.select().from(intakes);
-    
-    if (programId) {
-      query = query.where(eq(intakes.programId, programId));
-    }
-    
-    const intakesList = await query;
-    
-    // Add program information
-    const intakesWithProgram = await Promise.all(
-      intakesList.map(async (intake) => {
-        const [program] = await db.select().from(academicPrograms).where(eq(academicPrograms.id, intake.programId));
-        return {
-          ...intake,
-          program: program || undefined
-        };
-      })
-    );
-    
-    return intakesWithProgram;
-  }
-
-  async getIntakeById(id: number): Promise<Intake | undefined> {
-    const [intake] = await db.select().from(intakes).where(eq(intakes.id, id));
-    return intake || undefined;
-  }
-
-  async createIntake(intake: InsertIntake): Promise<Intake> {
-    const [newIntake] = await db
-      .insert(intakes)
-      .values(intake)
-      .returning();
-    return newIntake;
-  }
-
-  // Groups
-  async getGroups(intakeId?: number): Promise<Group[]> {
-    let query = db.select().from(groups);
-    
-    if (intakeId) {
-      query = query.where(eq(groups.intakeId, intakeId));
-    }
-    
-    const groupsList = await query;
-    
-    // Add intake information
-    const groupsWithIntake = await Promise.all(
-      groupsList.map(async (group) => {
-        const [intake] = await db.select().from(intakes).where(eq(intakes.id, group.intakeId));
-        return {
-          ...group,
-          intake: intake || undefined
-        };
-      })
-    );
-    
-    return groupsWithIntake;
-  }
-
-  async getGroupById(id: number): Promise<Group | undefined> {
-    const [group] = await db.select().from(groups).where(eq(groups.id, id));
-    return group || undefined;
-  }
-
-  async createGroup(group: InsertGroup): Promise<Group> {
-    const [newGroup] = await db
-      .insert(groups)
-      .values(group)
-      .returning();
-    return newGroup;
-  }
-
-  // Terms
-  async getTerms(): Promise<Term[]> {
-    return await db.select().from(terms);
-  }
-
-  async getTermById(id: number): Promise<Term | undefined> {
-    const [term] = await db.select().from(terms).where(eq(terms.id, id));
-    return term || undefined;
-  }
-
-  async createTerm(term: InsertTerm): Promise<Term> {
-    const [newTerm] = await db
-      .insert(terms)
-      .values(term)
-      .returning();
-    return newTerm;
   }
 }
 

@@ -181,9 +181,9 @@ export default function AcademicStructure() {
               type={createType} 
               setType={setCreateType}
               onClose={() => setIsCreateDialogOpen(false)}
-              departments={departments || []}
-              programs={programs || []}
-              intakes={intakes || []}
+              departments={departments ?? []}
+              programs={programs ?? []}
+              intakes={intakes ?? []}
             />
           </DialogContent>
         </Dialog>
@@ -418,9 +418,9 @@ function CreateEntityForm({
   type: 'program' | 'intake' | 'group' | 'term';
   setType: (type: 'program' | 'intake' | 'group' | 'term') => void;
   onClose: () => void;
-  departments: any[];
-  programs: any[];
-  intakes: any[];
+  departments: any[] | undefined;
+  programs: any[] | undefined;
+  intakes: any[] | undefined;
 }) {
   const [formData, setFormData] = useState({
     name: '',
