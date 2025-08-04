@@ -116,12 +116,11 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
             <GraduationCap className="text-white" size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">CECOS SIS</h1>
+            <h1 className="text-xl font-bold text-gray-900">CECOS Connect</h1>
             <p className="text-xs text-gray-500">Learning Management</p>
           </div>
         </div>
       </div>
-
       {/* User Info */}
       <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center space-x-3">
@@ -138,7 +137,6 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
           </div>
         </div>
       </div>
-
       {/* Navigation Menu */}
       <nav className="flex-1 p-4 space-y-1">
         {filteredMenuItems.map((item) => (
@@ -168,7 +166,6 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
           />
         )}
       </nav>
-
       {/* Logout Button */}
       <div className="p-4">
         <Button
