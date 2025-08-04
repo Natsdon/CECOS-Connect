@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, varchar, jsonb, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -62,9 +62,8 @@ export const academicPrograms = pgTable("academic_programs", {
   code: varchar("code", { length: 20 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   departmentId: integer("department_id").notNull().references(() => departments.id),
-  duration: integer("duration").notNull(), // Duration in years
+  durationSemesters: integer("duration_semesters").notNull(), // Duration in semesters
   description: text("description"),
-  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -73,13 +72,9 @@ export const intakes = pgTable("intakes", {
   id: serial("id").primaryKey(),
   programId: integer("program_id").notNull().references(() => academicPrograms.id),
   name: varchar("name", { length: 50 }).notNull(), // e.g., "Fall 2024"
-  code: varchar("code", { length: 20 }).notNull(), // e.g., "F24"
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  registrationStartDate: timestamp("registration_start_date").notNull(),
-  registrationEndDate: timestamp("registration_end_date").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  maxStudents: integer("max_students"),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  capacity: integer("capacity"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -88,10 +83,7 @@ export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
   intakeId: integer("intake_id").notNull().references(() => intakes.id),
   name: varchar("name", { length: 50 }).notNull(), // e.g., "Group A"
-  code: varchar("code", { length: 20 }).notNull(), // e.g., "CS-F24-A"
-  maxStudents: integer("max_students").notNull().default(30),
-  currentStudents: integer("current_students").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
+  capacity: integer("capacity").notNull().default(30),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -99,12 +91,8 @@ export const groups = pgTable("groups", {
 export const terms = pgTable("terms", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 50 }).notNull(), // e.g., "Year 1 - Semester 1"
-  code: varchar("code", { length: 20 }).notNull(), // e.g., "Y1S1"
-  yearLevel: integer("year_level").notNull(), // 1, 2, 3, 4
-  semester: integer("semester").notNull(), // 1, 2
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
+  number: integer("number").notNull(), // 1, 2, 3, 4
+  credits: integer("credits").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
