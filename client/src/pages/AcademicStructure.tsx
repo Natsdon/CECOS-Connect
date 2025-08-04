@@ -547,7 +547,13 @@ export default function AcademicStructure() {
                                 <div className="text-left">
                                   <div className="font-medium text-gray-900">{intake.name}</div>
                                   <div className="text-sm text-gray-500">
-                                    Year {intake.year} • Semester {intake.semester}
+                                    {intake.totalTerms} Terms • {new Date(intake.startDate).toLocaleDateString('en-GB', { 
+                                      year: 'numeric', 
+                                      month: 'short' 
+                                    })} - {new Date(intake.endDate).toLocaleDateString('en-GB', { 
+                                      year: 'numeric', 
+                                      month: 'short' 
+                                    })}
                                   </div>
                                 </div>
                                 <Badge variant={intake.isActive ? "default" : "secondary"}>
