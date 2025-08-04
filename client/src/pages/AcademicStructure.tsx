@@ -1065,6 +1065,10 @@ function CreateEntityForm({
                 <SelectItem value="2">2 Terms</SelectItem>
                 <SelectItem value="3">3 Terms</SelectItem>
                 <SelectItem value="4">4 Terms</SelectItem>
+                <SelectItem value="5">5 Terms</SelectItem>
+                <SelectItem value="6">6 Terms</SelectItem>
+                <SelectItem value="7">7 Terms</SelectItem>
+                <SelectItem value="8">8 Terms</SelectItem>
               </SelectContent>
             </Select>
           </div>
