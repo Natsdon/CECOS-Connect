@@ -203,6 +203,17 @@ export default function AcademicStructure() {
     });
   };
 
+  // Helper function to get filtered terms for a specific intake
+  const getFilteredTermsForIntake = (intakeId: number) => {
+    return terms?.filter(term => {
+      const matchesIntake = (term as any).intakeId === intakeId;
+      const matchesSearch = searchQuery === '' || 
+        term.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchesIntake && matchesSearch;
+    }) || [];
+  };
+
   // Edit handlers
   const handleEditProgram = (program: AcademicProgram) => {
     setEditingEntity(program);
@@ -556,7 +567,7 @@ export default function AcademicStructure() {
                             <CollapsibleContent className="mt-3 ml-8 space-y-4">
                               {/* Terms with Groups underneath */}
                               <div className="space-y-4">
-                                {getFilteredTerms().map((term) => (
+                                {getFilteredTermsForIntake(intake.id).map((term) => (
                                   <div key={term.id} className="border-l-2 border-purple-200 pl-4">
                                     {/* Term Header */}
                                     <div className="flex items-center justify-between mb-3 p-3 bg-purple-50 rounded-lg border">
@@ -566,6 +577,11 @@ export default function AcademicStructure() {
                                           <h5 className="font-semibold text-gray-900">{term.name}</h5>
                                           <div className="text-sm text-gray-600">
                                             Term {term.number} • {term.credits} credits
+                                            {(term as any).startDate && (term as any).endDate && (
+                                              <div className="text-xs text-gray-500 mt-1">
+                                                {new Date((term as any).startDate).toLocaleDateString()} - {new Date((term as any).endDate).toLocaleDateString()}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       </div>
@@ -713,8 +729,8 @@ function CreateEntityForm({
         break;
       case 'intake':
         data.programId = parseInt(formData.programId);
-        data.year = parseInt(formData.year);
-        data.semester = parseInt(formData.semester);
+        
+        data.totalTerms = parseInt(formData.semester);
         data.startDate = formData.startDate;
         data.endDate = formData.endDate;
         break;
@@ -724,8 +740,11 @@ function CreateEntityForm({
         data.capacity = parseInt(formData.maxStudents);
         break;
       case 'term':
-        data.number = parseInt(formData.year) || 1; // Use year field as term number
-        data.credits = parseInt(formData.semester) || 3; // Use semester field as credits
+        data.intakeId = parseInt(formData.intakeId);
+        data.number = parseInt(formData.number);
+        data.credits = parseInt(formData.credits);
+        data.startDate = formData.startDate;
+        data.endDate = formData.endDate;
         break;
     }
 
@@ -819,27 +838,18 @@ function CreateEntityForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Year</Label>
-              <Input
-                type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                placeholder="Year"
-                required
-              />
-            </div>
-            <div>
-              <Label>Semester</Label>
-              <Input
-                type="number"
-                value={formData.semester}
-                onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                placeholder="Semester"
-                required
-              />
-            </div>
+          <div>
+            <Label>Total Academic Terms</Label>
+            <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select number of terms" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 Terms</SelectItem>
+                <SelectItem value="3">3 Terms</SelectItem>
+                <SelectItem value="4">4 Terms</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1045,8 +1055,8 @@ function EditEntityForm({
         break;
       case 'intake':
         data.programId = parseInt(formData.programId);
-        data.year = parseInt(formData.year);
-        data.semester = parseInt(formData.semester);
+        
+        data.totalTerms = parseInt(formData.semester);
         data.startDate = formData.startDate;
         data.endDate = formData.endDate;
         break;
@@ -1056,8 +1066,11 @@ function EditEntityForm({
         data.capacity = parseInt(formData.maxStudents);
         break;
       case 'term':
-        data.number = parseInt(formData.year) || 1;
-        data.credits = parseInt(formData.semester) || 3;
+        data.intakeId = parseInt(formData.intakeId);
+        data.number = parseInt(formData.number);
+        data.credits = parseInt(formData.credits);
+        data.startDate = formData.startDate;
+        data.endDate = formData.endDate;
         break;
     }
 

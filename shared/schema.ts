@@ -67,13 +67,14 @@ export const academicPrograms = pgTable("academic_programs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Intakes within programs (e.g., Fall 2024, Spring 2025)
+// Intakes within programs (e.g., Sep 2024, Jan 2025)
 export const intakes = pgTable("intakes", {
   id: serial("id").primaryKey(),
   programId: integer("program_id").notNull().references(() => academicPrograms.id),
-  name: varchar("name", { length: 50 }).notNull(), // e.g., "Fall 2024"
+  name: varchar("name", { length: 50 }).notNull(), // e.g., "Sep 2024"
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
+  totalTerms: integer("total_terms").notNull().default(3), // Number of terms in this intake
   capacity: integer("capacity"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -89,12 +90,16 @@ export const groups = pgTable("groups", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Terms/Semesters for academic calendar
+// Academic Terms for calendar
 export const terms = pgTable("terms", {
   id: serial("id").primaryKey(),
-  name: varchar("name", { length: 50 }).notNull(), // e.g., "Year 1 - Semester 1"
-  number: integer("number").notNull(), // 1, 2, 3, 4
+  intakeId: integer("intake_id").references(() => intakes.id), // Link terms to specific intakes
+  name: varchar("name", { length: 50 }).notNull(), // e.g., "Term 1", "Term 2"
+  number: integer("number").notNull(), // 1, 2, 3
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
   credits: integer("credits").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
