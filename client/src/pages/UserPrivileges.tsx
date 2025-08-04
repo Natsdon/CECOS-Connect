@@ -61,7 +61,7 @@ export default function UserPrivileges() {
 
   const grantPrivilegeMutation = useMutation({
     mutationFn: async (privilegeData: any) => {
-      const response = await apiRequest('POST', `/api/users/${privilegeData.targetUserId}/privileges`, privilegeData);
+      const response = await apiRequest(`/api/users/${privilegeData.targetUserId}/privileges`, 'POST', privilegeData);
       return response.json();
     },
     onSuccess: () => {
@@ -84,7 +84,7 @@ export default function UserPrivileges() {
 
   const revokePrivilegeMutation = useMutation({
     mutationFn: async (privilegeId: number) => {
-      const response = await apiRequest('DELETE', `/api/privileges/${privilegeId}`);
+      const response = await apiRequest(`/api/privileges/${privilegeId}`, 'DELETE');
       return response.json();
     },
     onSuccess: () => {

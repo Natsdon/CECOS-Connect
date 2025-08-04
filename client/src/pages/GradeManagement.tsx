@@ -67,7 +67,7 @@ export default function GradeManagement() {
 
   const gradeSubmissionMutation = useMutation({
     mutationFn: async ({ submissionId, gradeData }: { submissionId: number; gradeData: any }) => {
-      const response = await apiRequest('PUT', `/api/submissions/${submissionId}/grade`, gradeData);
+      const response = await apiRequest(`/api/submissions/${submissionId}/grade`, 'PUT', gradeData);
       return response.json();
     },
     onSuccess: () => {

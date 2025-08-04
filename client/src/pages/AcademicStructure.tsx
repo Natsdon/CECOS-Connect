@@ -449,7 +449,7 @@ function CreateEntityForm({
         term: '/api/terms',
       }[type];
       
-      const response = await apiRequest('POST', endpoint, data);
+      const response = await apiRequest(endpoint, 'POST', data);
       return response.json();
     },
     onSuccess: () => {
