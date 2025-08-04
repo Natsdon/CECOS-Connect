@@ -800,6 +800,134 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+  // Academic Programs
+  async getAcademicPrograms(departmentId?: number): Promise<AcademicProgram[]> {
+    let query = db.select().from(academicPrograms);
+    
+    if (departmentId) {
+      query = query.where(eq(academicPrograms.departmentId, departmentId));
+    }
+    
+    const programs = await query;
+    
+    // Add department information
+    const programsWithDepartment = await Promise.all(
+      programs.map(async (program) => {
+        const [dept] = await db.select().from(departments).where(eq(departments.id, program.departmentId));
+        return {
+          ...program,
+          department: dept ? { name: dept.name, code: dept.code } : undefined
+        };
+      })
+    );
+    
+    return programsWithDepartment;
+  }
+
+  async getAcademicProgramById(id: number): Promise<AcademicProgram | undefined> {
+    const [program] = await db.select().from(academicPrograms).where(eq(academicPrograms.id, id));
+    return program || undefined;
+  }
+
+  async createAcademicProgram(program: InsertAcademicProgram): Promise<AcademicProgram> {
+    const [newProgram] = await db
+      .insert(academicPrograms)
+      .values(program)
+      .returning();
+    return newProgram;
+  }
+
+  // Intakes
+  async getIntakes(programId?: number): Promise<Intake[]> {
+    let query = db.select().from(intakes);
+    
+    if (programId) {
+      query = query.where(eq(intakes.programId, programId));
+    }
+    
+    const intakesList = await query;
+    
+    // Add program information
+    const intakesWithProgram = await Promise.all(
+      intakesList.map(async (intake) => {
+        const [program] = await db.select().from(academicPrograms).where(eq(academicPrograms.id, intake.programId));
+        return {
+          ...intake,
+          program: program || undefined
+        };
+      })
+    );
+    
+    return intakesWithProgram;
+  }
+
+  async getIntakeById(id: number): Promise<Intake | undefined> {
+    const [intake] = await db.select().from(intakes).where(eq(intakes.id, id));
+    return intake || undefined;
+  }
+
+  async createIntake(intake: InsertIntake): Promise<Intake> {
+    const [newIntake] = await db
+      .insert(intakes)
+      .values(intake)
+      .returning();
+    return newIntake;
+  }
+
+  // Groups
+  async getGroups(intakeId?: number): Promise<Group[]> {
+    let query = db.select().from(groups);
+    
+    if (intakeId) {
+      query = query.where(eq(groups.intakeId, intakeId));
+    }
+    
+    const groupsList = await query;
+    
+    // Add intake information
+    const groupsWithIntake = await Promise.all(
+      groupsList.map(async (group) => {
+        const [intake] = await db.select().from(intakes).where(eq(intakes.id, group.intakeId));
+        return {
+          ...group,
+          intake: intake || undefined
+        };
+      })
+    );
+    
+    return groupsWithIntake;
+  }
+
+  async getGroupById(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group || undefined;
+  }
+
+  async createGroup(group: InsertGroup): Promise<Group> {
+    const [newGroup] = await db
+      .insert(groups)
+      .values(group)
+      .returning();
+    return newGroup;
+  }
+
+  // Terms
+  async getTerms(): Promise<Term[]> {
+    return await db.select().from(terms);
+  }
+
+  async getTermById(id: number): Promise<Term | undefined> {
+    const [term] = await db.select().from(terms).where(eq(terms.id, id));
+    return term || undefined;
+  }
+
+  async createTerm(term: InsertTerm): Promise<Term> {
+    const [newTerm] = await db
+      .insert(terms)
+      .values(term)
+      .returning();
+    return newTerm;
+  }
 }
 
 export const storage = new DatabaseStorage();

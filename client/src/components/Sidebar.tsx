@@ -1,4 +1,4 @@
-import { GraduationCap, User, LogOut, Gauge, Users, CalendarCheck, ClipboardList, TrendingUp, UserPlus, Shield } from 'lucide-react';
+import { GraduationCap, User, LogOut, Gauge, Users, CalendarCheck, ClipboardList, TrendingUp, UserPlus, Shield, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTabs } from '@/hooks/use-tabs';
@@ -12,6 +12,7 @@ import ExamManagement from '@/pages/ExamManagement';
 import GradeManagement from '@/pages/GradeManagement';
 import Admissions from '@/pages/Admissions';
 import UserPrivileges from '@/pages/UserPrivileges';
+import AcademicStructure from '@/pages/AcademicStructure';
 
 interface SidebarProps {
   openTab: (tab: any) => void;
@@ -28,6 +29,13 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
       icon: Gauge,
       component: Dashboard,
       roles: ['student', 'faculty', 'admin', 'epr_admin']
+    },
+    {
+      id: 'academic-structure',
+      title: 'Academic Structure',
+      icon: BookOpen,
+      component: AcademicStructure,
+      roles: ['admin', 'epr_admin']
     },
     {
       id: 'attendance',
@@ -93,6 +101,7 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
   const getIconClass = (IconComponent: any): string => {
     const iconMap: { [key: string]: string } = {
       [Gauge.name]: 'fas fa-tachometer-alt',
+      [BookOpen.name]: 'fas fa-book-open',
       [Users.name]: 'fas fa-users',
       [CalendarCheck.name]: 'fas fa-calendar-check',
       [ClipboardList.name]: 'fas fa-clipboard-list',

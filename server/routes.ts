@@ -621,6 +621,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Academic Programs routes
+  app.get("/api/academic-programs", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const programs = await storage.getAcademicPrograms();
+      res.json(programs);
+    } catch (error) {
+      console.error("Get academic programs error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/academic-programs", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const programData = req.body;
+      const program = await storage.createAcademicProgram(programData);
+      res.status(201).json(program);
+    } catch (error) {
+      console.error("Create academic program error:", error);
+      res.status(400).json({ message: "Invalid program data" });
+    }
+  });
+
+  // Intakes routes
+  app.get("/api/intakes", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const intakes = await storage.getIntakes();
+      res.json(intakes);
+    } catch (error) {
+      console.error("Get intakes error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/intakes", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const intakeData = req.body;
+      const intake = await storage.createIntake(intakeData);
+      res.status(201).json(intake);
+    } catch (error) {
+      console.error("Create intake error:", error);
+      res.status(400).json({ message: "Invalid intake data" });
+    }
+  });
+
+  // Groups routes  
+  app.get("/api/groups", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const groups = await storage.getGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Get groups error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/groups", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const groupData = req.body;
+      const group = await storage.createGroup(groupData);
+      res.status(201).json(group);
+    } catch (error) {
+      console.error("Create group error:", error);
+      res.status(400).json({ message: "Invalid group data" });
+    }
+  });
+
+  // Terms routes
+  app.get("/api/terms", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const terms = await storage.getTerms();
+      res.json(terms);
+    } catch (error) {
+      console.error("Get terms error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/terms", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const termData = req.body;
+      const term = await storage.createTerm(termData);
+      res.status(201).json(term);
+    } catch (error) {
+      console.error("Create term error:", error);
+      res.status(400).json({ message: "Invalid term data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
