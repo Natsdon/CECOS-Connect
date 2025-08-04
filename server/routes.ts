@@ -651,6 +651,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/academic-programs/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const programData = req.body;
+      const program = await storage.updateProgram(id, programData);
+      res.json(program);
+    } catch (error) {
+      console.error("Update program error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/academic-programs/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProgram(id);
+      res.json({ message: "Program deleted successfully" });
+    } catch (error) {
+      console.error("Delete program error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Internal server error";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
   // Intakes routes
   app.get("/api/intakes", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
@@ -691,7 +715,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Intake deleted successfully" });
     } catch (error) {
       console.error("Delete intake error:", error);
-      res.status(500).json({ message: "Internal server error" });
+      const errorMessage = error instanceof Error ? error.message : "Internal server error";
+      res.status(400).json({ message: errorMessage });
     }
   });
 
@@ -741,7 +766,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Group deleted successfully" });
     } catch (error) {
       console.error("Delete group error:", error);
-      res.status(500).json({ message: "Internal server error" });
+      const errorMessage = error instanceof Error ? error.message : "Internal server error";
+      res.status(400).json({ message: errorMessage });
     }
   });
 
@@ -788,7 +814,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Term deleted successfully" });
     } catch (error) {
       console.error("Delete term error:", error);
-      res.status(500).json({ message: "Internal server error" });
+      const errorMessage = error instanceof Error ? error.message : "Internal server error";
+      res.status(400).json({ message: errorMessage });
     }
   });
 

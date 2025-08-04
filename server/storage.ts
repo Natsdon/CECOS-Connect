@@ -788,6 +788,17 @@ export class DatabaseStorage implements IStorage {
   // Delete methods for Academic Structure
   async deleteIntake(id: number): Promise<void> {
     console.log('Deleting intake:', id);
+    
+    // Check if there are any terms associated with this intake
+    const associatedTerms = await db
+      .select()
+      .from(terms)
+      .where(eq(terms.intakeId, id));
+    
+    if (associatedTerms.length > 0) {
+      throw new Error(`Cannot delete intake. There are ${associatedTerms.length} term(s) associated with this intake. Please delete all terms first.`);
+    }
+    
     await db
       .delete(intakes)
       .where(eq(intakes.id, id));
@@ -796,6 +807,17 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGroup(id: number): Promise<void> {
     console.log('Deleting group:', id);
+    
+    // Check if there are any students associated with this group
+    const associatedStudents = await db
+      .select()
+      .from(students)
+      .where(eq(students.groupId, id));
+    
+    if (associatedStudents.length > 0) {
+      throw new Error(`Cannot delete group. There are ${associatedStudents.length} student(s) assigned to this group. Please reassign all students first.`);
+    }
+    
     await db
       .delete(groups)
       .where(eq(groups.id, id));
@@ -804,10 +826,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTerm(id: number): Promise<void> {
     console.log('Deleting term:', id);
+    
+    // Check if there are any groups associated with this term
+    const associatedGroups = await db
+      .select()
+      .from(groups)
+      .where(eq(groups.termId, id));
+    
+    if (associatedGroups.length > 0) {
+      throw new Error(`Cannot delete term. There are ${associatedGroups.length} group(s) associated with this term. Please delete all groups first.`);
+    }
+    
     await db
       .delete(terms)
       .where(eq(terms.id, id));
     console.log('Deleted term:', id);
+  }
+
+  async deleteProgram(id: number): Promise<void> {
+    console.log('Deleting program:', id);
+    
+    // Check if there are any intakes associated with this program
+    const associatedIntakes = await db
+      .select()
+      .from(intakes)
+      .where(eq(intakes.programId, id));
+    
+    if (associatedIntakes.length > 0) {
+      throw new Error(`Cannot delete program. There are ${associatedIntakes.length} intake(s) associated with this program. Please delete all intakes first.`);
+    }
+    
+    await db
+      .delete(programs)
+      .where(eq(programs.id, id));
+    console.log('Deleted program:', id);
   }
 }
 

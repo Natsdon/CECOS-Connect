@@ -335,6 +335,23 @@ export default function AcademicStructure() {
     }
   };
 
+  const handleDeleteProgram = (program: any) => {
+    // Check if program has any intakes
+    const programIntakes = intakes?.filter(i => i.programId === program.id) || [];
+    if (programIntakes.length > 0) {
+      toast({
+        title: 'Cannot Delete Program',
+        description: `This program has ${programIntakes.length} intake(s). Remove all intakes first.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete program "${program.name}"?`)) {
+      deleteProgramMutation.mutate(program.id);
+    }
+  };
+
   const deleteIntakeMutation = useMutation({
     mutationFn: async (intakeId: number) => {
       return await apiRequest(`/api/intakes/${intakeId}`, 'DELETE');
@@ -390,6 +407,26 @@ export default function AcademicStructure() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete group.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteProgramMutation = useMutation({
+    mutationFn: async (programId: number) => {
+      return await apiRequest(`/api/academic-programs/${programId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/academic-programs'] });
+      toast({
+        title: 'Success',
+        description: 'Program deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete program.',
         variant: 'destructive',
       });
     },
@@ -639,12 +676,24 @@ export default function AcademicStructure() {
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditProgram(program);
-                        }}>
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded" onClick={(e) => e.stopPropagation()}>
+                            <Settings className="w-4 h-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => handleEditProgram(program)}>
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Edit Program
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteProgram(program)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Program
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CollapsibleTrigger>
                     
