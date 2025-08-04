@@ -513,7 +513,7 @@ export default function AcademicStructure() {
                                     <div>
                                       <div className="font-medium text-gray-900">{group.name}</div>
                                       <div className="text-sm text-gray-500">
-                                        Capacity: {group.capacity || 30} students
+                                        Capacity: {(group as any).capacity || 30} students
                                       </div>
                                     </div>
                                     <Badge variant={group.isActive ? "default" : "secondary"}>
@@ -669,8 +669,7 @@ function CreateEntityForm({
         break;
       case 'group':
         data.intakeId = parseInt(formData.intakeId);
-        data.maxStudents = parseInt(formData.maxStudents);
-        data.currentStudents = 0;
+        data.capacity = parseInt(formData.maxStudents);
         break;
       case 'term':
         data.number = parseInt(formData.year) || 1; // Use year field as term number
@@ -986,8 +985,7 @@ function EditEntityForm({
         break;
       case 'group':
         data.intakeId = parseInt(formData.intakeId);
-        data.maxStudents = parseInt(formData.maxStudents);
-        data.currentStudents = entity.currentStudents || 0;
+        data.capacity = parseInt(formData.maxStudents);
         break;
       case 'term':
         data.number = parseInt(formData.year) || 1;
