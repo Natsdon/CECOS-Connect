@@ -38,7 +38,7 @@ interface Admission {
 }
 
 export default function Admissions() {
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedAdmission, setSelectedAdmission] = useState<Admission | null>(null);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({
@@ -50,7 +50,7 @@ export default function Admissions() {
   const queryClient = useQueryClient();
 
   const { data: admissions, isLoading } = useQuery<Admission[]>({
-    queryKey: ['/api/admissions', selectedStatus],
+    queryKey: ['/api/admissions', selectedStatus === 'all' ? '' : selectedStatus],
   });
 
   const { data: departments } = useQuery({
@@ -216,7 +216,7 @@ export default function Admissions() {
                   <SelectValue placeholder="All Applications" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Applications</SelectItem>
+                  <SelectItem value="all">All Applications</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
