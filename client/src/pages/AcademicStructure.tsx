@@ -1313,7 +1313,6 @@ function EditEntityForm({
           required
         />
       </div>
-
       {type === 'program' && (
         <>
           <div>
@@ -1358,7 +1357,6 @@ function EditEntityForm({
           </div>
         </>
       )}
-
       {type === 'intake' && (
         <>
           <div>
@@ -1375,7 +1373,7 @@ function EditEntityForm({
             </Select>
           </div>
           <div>
-            <Label>Year</Label>
+            <Label>Intake Year</Label>
             <Select value={formData.year} onValueChange={(value) => setFormData({ ...formData, year: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select year" />
@@ -1414,7 +1412,6 @@ function EditEntityForm({
           </div>
         </>
       )}
-
       {type === 'group' && (
         <>
           <div>
@@ -1442,7 +1439,6 @@ function EditEntityForm({
           </div>
         </>
       )}
-
       {type === 'term' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -1467,7 +1463,6 @@ function EditEntityForm({
           </div>
         </div>
       )}
-
       <div className="flex items-center space-x-3 pt-4">
         <Button type="submit" disabled={updateMutation.isPending}>
           {updateMutation.isPending ? 'Updating...' : 'Update'}
