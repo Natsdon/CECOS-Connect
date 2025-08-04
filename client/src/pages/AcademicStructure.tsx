@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,7 +25,8 @@ import {
   Edit2,
   Trash2,
   Settings,
-  ArrowRight
+  ArrowRight,
+  Edit
 } from 'lucide-react';
 
 interface AcademicProgram {
@@ -680,18 +682,26 @@ export default function AcademicStructure() {
                                 </Badge>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <Button variant="ghost" size="sm" onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditIntake(intake);
-                                }}>
-                                  <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteIntake(intake);
-                                }}>
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                      <Settings className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                    <DropdownMenuItem onClick={() => handleEditIntake(intake)}>
+                                      <Edit2 className="w-4 h-4 mr-2" />
+                                      Edit Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteIntake(intake)}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete Intake
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </CollapsibleTrigger>
                             
@@ -717,12 +727,26 @@ export default function AcademicStructure() {
                                         </div>
                                       </div>
                                       <div className="flex items-center space-x-1">
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
-                                          <Edit2 className="w-3 h-3" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteTerm(term)}>
-                                          <Trash2 className="w-3 h-3 text-red-500" />
-                                        </Button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm">
+                                              <Settings className="w-3 h-3" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleEditTerm(term)}>
+                                              <Edit2 className="w-3 h-3 mr-2" />
+                                              Edit Term
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => handleDeleteTerm(term)}
+                                              className="text-red-600 focus:text-red-600"
+                                            >
+                                              <Trash2 className="w-3 h-3 mr-2" />
+                                              Delete Term
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
                                       </div>
                                     </div>
 
@@ -746,12 +770,26 @@ export default function AcademicStructure() {
                                             <Button variant="ghost" size="sm" onClick={() => handleProgressGroup(group, term.id)}>
                                               <ArrowRight className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
-                                              <Edit2 className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="sm" onClick={() => handleDeleteGroup(group)}>
-                                              <Trash2 className="w-4 h-4 text-red-500" />
-                                            </Button>
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="sm">
+                                                  <Settings className="w-4 h-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent>
+                                                <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                                                  <Edit2 className="w-4 h-4 mr-2" />
+                                                  Edit Group
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                  onClick={() => handleDeleteGroup(group)}
+                                                  className="text-red-600 focus:text-red-600"
+                                                >
+                                                  <Trash2 className="w-4 h-4 mr-2" />
+                                                  Delete Group
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
                                           </div>
                                         </div>
                                       ))}
