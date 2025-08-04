@@ -40,7 +40,7 @@ export default function Login() {
           <div className="mx-auto w-16 h-16 bg-burgundy-500 rounded-xl flex items-center justify-center mb-4">
             <GraduationCap className="text-white" size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">CECOS SIS & LMS</h1>
+          <h1 className="text-3xl font-bold text-gray-900">CECOS Connect</h1>
           <p className="text-gray-600 mt-2">Student Information & Learning Management System</p>
         </div>
 
