@@ -788,7 +788,7 @@ export class DatabaseStorage implements IStorage {
   // Delete methods for Academic Structure
   async deleteIntake(id: number): Promise<void> {
     console.log('Deleting intake:', id);
-    await this.db
+    await db
       .delete(intakes)
       .where(eq(intakes.id, id));
     console.log('Deleted intake:', id);
@@ -796,7 +796,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGroup(id: number): Promise<void> {
     console.log('Deleting group:', id);
-    await this.db
+    await db
       .delete(groups)
       .where(eq(groups.id, id));
     console.log('Deleted group:', id);
@@ -804,7 +804,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTerm(id: number): Promise<void> {
     console.log('Deleting term:', id);
-    await this.db
+    await db
       .delete(terms)
       .where(eq(terms.id, id));
     console.log('Deleted term:', id);
