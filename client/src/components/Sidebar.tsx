@@ -1,4 +1,5 @@
-import { GraduationCap, User, LogOut, Gauge, Users, CalendarCheck, ClipboardList, TrendingUp, UserPlus, Shield } from 'lucide-react';
+import { User, LogOut, Gauge, Users, CalendarCheck, ClipboardList, TrendingUp, UserPlus, Shield } from 'lucide-react';
+import logoImage from '@assets/CECOS_1754328342861.png';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTabs } from '@/hooks/use-tabs';
@@ -111,14 +112,24 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
     <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-burgundy-500 rounded-lg flex items-center justify-center">
-            <GraduationCap className="text-white" size={20} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+              <img src={logoImage} alt="CECOS Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">CECOS Connect</h1>
+              <p className="text-xs text-gray-500">Learning Management</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">CECOS Connect</h1>
-            <p className="text-xs text-gray-500">Learning Management</p>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={logout}
+            className="text-gray-600 hover:text-red-600 hover:border-red-300"
+          >
+            <LogOut size={16} />
+          </Button>
         </div>
       </div>
       {/* User Info */}
@@ -166,17 +177,6 @@ export function Sidebar({ openTab, activeTabId }: SidebarProps) {
           />
         )}
       </nav>
-      {/* Logout Button */}
-      <div className="p-4">
-        <Button
-          onClick={logout}
-          variant="ghost"
-          className="w-full justify-start text-gray-700 hover:bg-gray-100"
-        >
-          <LogOut size={16} className="mr-2" />
-          <span>Logout</span>
-        </Button>
-      </div>
     </div>
   );
 }
