@@ -941,7 +941,7 @@ function CreateEntityForm({
       case 'program':
         data.code = formData.code;
         data.departmentId = parseInt(formData.departmentId);
-        data.duration = parseInt(formData.duration);
+        data.durationSemesters = parseInt(formData.duration);
         data.description = formData.description;
         break;
       case 'intake':
@@ -1228,7 +1228,7 @@ function EditEntityForm({
       departmentId: entity.departmentId?.toString() || '',
       programId: entity.programId?.toString() || '',
       intakeId: entity.intakeId?.toString() || '',
-      duration: entity.duration?.toString() || '',
+      duration: entity.durationSemesters?.toString() || entity.duration?.toString() || '',
       year: entity.year?.toString() || entity.number?.toString() || extractedYear,
       semester: entity.semester?.toString() || entity.credits?.toString() || '',
       maxStudents: entity.maxStudents?.toString() || entity.capacity?.toString() || '',
@@ -1281,7 +1281,7 @@ function EditEntityForm({
       case 'program':
         data.code = formData.code;
         data.departmentId = parseInt(formData.departmentId);
-        data.duration = parseInt(formData.duration);
+        data.durationSemesters = parseInt(formData.duration);
         data.description = formData.description;
         break;
       case 'intake':
