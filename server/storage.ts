@@ -857,8 +857,8 @@ export class DatabaseStorage implements IStorage {
     }
     
     await db
-      .delete(programs)
-      .where(eq(programs.id, id));
+      .delete(academicPrograms)
+      .where(eq(academicPrograms.id, id));
     console.log('Deleted program:', id);
   }
 }
