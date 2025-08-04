@@ -181,9 +181,9 @@ export default function AcademicStructure() {
               type={createType} 
               setType={setCreateType}
               onClose={() => setIsCreateDialogOpen(false)}
-              departments={departments ?? []}
-              programs={programs ?? []}
-              intakes={intakes ?? []}
+              departments={departments}
+              programs={programs}
+              intakes={intakes}
             />
           </DialogContent>
         </Dialog>
@@ -385,8 +385,8 @@ export default function AcademicStructure() {
                       </Badge>
                     </div>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <div>Term Number: {term.number}</div>
-                      <div>Credits: {term.credits}</div>
+                      <div>Term Number: {(term as any).number}</div>
+                      <div>Credits: {(term as any).credits}</div>
                     </div>
                     <div className="flex items-center space-x-2 mt-4">
                       <Button variant="ghost" size="sm">
