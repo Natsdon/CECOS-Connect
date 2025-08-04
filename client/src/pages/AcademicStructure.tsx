@@ -258,10 +258,7 @@ export default function AcademicStructure() {
 
   const progressGroupMutation = useMutation({
     mutationFn: async ({ groupId, termId }: { groupId: number; termId: number }) => {
-      return await apiRequest(`/api/groups/${groupId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ termId })
-      });
+      return await apiRequest(`/api/groups/${groupId}`, 'PUT', { termId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
@@ -684,9 +681,11 @@ export default function AcademicStructure() {
                               <div className="flex items-center space-x-2">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                      <Settings className="w-4 h-4" />
-                                    </Button>
+                                    <div>
+                                      <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                        <Settings className="w-4 h-4" />
+                                      </Button>
+                                    </div>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                                     <DropdownMenuItem onClick={() => handleEditIntake(intake)}>
@@ -729,9 +728,11 @@ export default function AcademicStructure() {
                                       <div className="flex items-center space-x-1">
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm">
-                                              <Settings className="w-3 h-3" />
-                                            </Button>
+                                            <div>
+                                              <Button variant="ghost" size="sm">
+                                                <Settings className="w-3 h-3" />
+                                              </Button>
+                                            </div>
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent>
                                             <DropdownMenuItem onClick={() => handleEditTerm(term)}>
@@ -772,9 +773,11 @@ export default function AcademicStructure() {
                                             </Button>
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                  <Settings className="w-4 h-4" />
-                                                </Button>
+                                                <div>
+                                                  <Button variant="ghost" size="sm">
+                                                    <Settings className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent>
                                                 <DropdownMenuItem onClick={() => handleEditGroup(group)}>

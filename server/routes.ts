@@ -19,11 +19,14 @@ const authenticateToken = (req: AuthRequest, res: Response, next: any) => {
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
+  try {
+    const user = jwt.verify(token, JWT_SECRET);
     req.user = user;
     next();
-  });
+  } catch (err) {
+    console.error('JWT verify error:', err);
+    return res.status(403).json({ message: 'Invalid or expired token' });
+  }
 };
 
 // Role-based authorization middleware
@@ -773,7 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/terms/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      console.log('Deleting term with ID:', id);
       await storage.deleteTerm(id);
+      console.log('Term deleted successfully:', id);
       res.json({ message: "Term deleted successfully" });
     } catch (error) {
       console.error("Delete term error:", error);
