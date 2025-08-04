@@ -82,8 +82,10 @@ export const intakes = pgTable("intakes", {
 export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
   intakeId: integer("intake_id").notNull().references(() => intakes.id),
+  termId: integer("term_id").references(() => terms.id), // Current term the group is in
   name: varchar("name", { length: 50 }).notNull(), // e.g., "Group A"
   capacity: integer("capacity").notNull().default(30),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -23,7 +23,8 @@ import {
   GraduationCap,
   Edit2,
   Trash2,
-  Settings
+  Settings,
+  ArrowRight
 } from 'lucide-react';
 
 interface AcademicProgram {
@@ -174,10 +175,12 @@ export default function AcademicStructure() {
     });
   };
 
-  const getFilteredGroupsForIntake = (intakeId: number) => {
-    const intakeGroups = groups?.filter(group => group.intakeId === intakeId) || [];
+  const getFilteredGroupsForTerm = (termId: number, intakeId: number) => {
+    const termGroups = groups?.filter(group => 
+      group.intakeId === intakeId && (group as any).termId === termId
+    ) || [];
     
-    return intakeGroups.filter(group => {
+    return termGroups.filter(group => {
       const matchesSearch = searchQuery === '' || 
         group.name.toLowerCase().includes(searchQuery.toLowerCase());
       
@@ -218,6 +221,50 @@ export default function AcademicStructure() {
     setEditingType('group');
     setIsEditDialogOpen(true);
   };
+
+  const handleProgressGroup = (group: any, currentTermId: number) => {
+    // Find the next term in sequence
+    const currentTerm = terms?.find(t => t.id === currentTermId);
+    const nextTerm = terms?.find(t => t.number === (currentTerm?.number || 1) + 1);
+    
+    if (!nextTerm) {
+      toast({
+        title: 'No Next Term',
+        description: 'This group is already in the final term.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Progress the group to the next term
+    progressGroupMutation.mutate({
+      groupId: group.id,
+      termId: nextTerm.id
+    });
+  };
+
+  const progressGroupMutation = useMutation({
+    mutationFn: async ({ groupId, termId }: { groupId: number; termId: number }) => {
+      return await apiRequest(`/api/groups/${groupId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ termId })
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      toast({
+        title: 'Success',
+        description: 'Group progressed to next term successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to progress group.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const handleEditTerm = (term: Term) => {
     setEditingEntity(term);
@@ -280,6 +327,7 @@ export default function AcademicStructure() {
               departments={departments as any}
               programs={programs as any}
               intakes={intakes as any}
+              terms={terms as any}
             />
           </DialogContent>
         </Dialog>
@@ -297,6 +345,7 @@ export default function AcademicStructure() {
               departments={departments as any}
               programs={programs as any}
               intakes={intakes as any}
+              terms={terms as any}
             />
           </DialogContent>
         </Dialog>
@@ -505,62 +554,61 @@ export default function AcademicStructure() {
                             </CollapsibleTrigger>
                             
                             <CollapsibleContent className="mt-3 ml-8 space-y-4">
-                              {/* Terms Section */}
-                              <div className="border-l-2 border-purple-200 pl-4">
-                                <div className="flex items-center space-x-2 mb-3">
-                                  <BookOpen className="w-4 h-4 text-purple-600" />
-                                  <h4 className="font-medium text-gray-900">Terms</h4>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  {getFilteredTerms().map((term) => (
-                                    <div key={term.id} className="border rounded-lg p-3 bg-purple-50">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <h5 className="font-semibold text-gray-900">{term.name}</h5>
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
-                                          <Edit2 className="w-3 h-3" />
-                                        </Button>
-                                      </div>
-                                      <div className="text-sm text-gray-600 space-y-1">
-                                        <div>Term {term.number}</div>
-                                        <div>{term.credits} credits</div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Groups Section */}
-                              <div className="border-l-2 border-green-200 pl-4">
-                                <div className="flex items-center space-x-2 mb-3">
-                                  <Users className="w-4 h-4 text-green-600" />
-                                  <h4 className="font-medium text-gray-900">Student Groups</h4>
-                                </div>
-                                <div className="space-y-2">
-                                  {getFilteredGroupsForIntake(intake.id).map((group) => (
-                                    <div key={group.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              {/* Terms with Groups underneath */}
+                              <div className="space-y-4">
+                                {getFilteredTerms().map((term) => (
+                                  <div key={term.id} className="border-l-2 border-purple-200 pl-4">
+                                    {/* Term Header */}
+                                    <div className="flex items-center justify-between mb-3 p-3 bg-purple-50 rounded-lg border">
                                       <div className="flex items-center space-x-3">
-                                        <Users className="w-4 h-4 text-green-600" />
+                                        <BookOpen className="w-4 h-4 text-purple-600" />
                                         <div>
-                                          <div className="font-medium text-gray-900">{group.name}</div>
-                                          <div className="text-sm text-gray-500">
-                                            Capacity: {(group as any).capacity || 30} students
+                                          <h5 className="font-semibold text-gray-900">{term.name}</h5>
+                                          <div className="text-sm text-gray-600">
+                                            Term {term.number} • {term.credits} credits
                                           </div>
                                         </div>
-                                        <Badge variant={group.isActive ? "default" : "secondary"}>
-                                          {group.isActive ? "Active" : "Inactive"}
-                                        </Badge>
                                       </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
-                                          <Edit2 className="w-4 h-4" />
-                                        </Button>
-                                      </div>
+                                      <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
+                                        <Edit2 className="w-3 h-3" />
+                                      </Button>
                                     </div>
-                                  ))}
-                                  {getFilteredGroupsForIntake(intake.id).length === 0 && (
-                                    <div className="text-sm text-gray-400 italic">No groups created yet</div>
-                                  )}
-                                </div>
+
+                                    {/* Groups under this term */}
+                                    <div className="ml-6 space-y-2">
+                                      {getFilteredGroupsForTerm(term.id, intake.id).map((group) => (
+                                        <div key={group.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                                          <div className="flex items-center space-x-3">
+                                            <Users className="w-4 h-4 text-green-600" />
+                                            <div>
+                                              <div className="font-medium text-gray-900">{group.name}</div>
+                                              <div className="text-sm text-gray-500">
+                                                Capacity: {(group as any).capacity || 30} students
+                                              </div>
+                                            </div>
+                                            <Badge variant={group.isActive ? "default" : "secondary"}>
+                                              {group.isActive ? "Active" : "Inactive"}
+                                            </Badge>
+                                          </div>
+                                          <div className="flex items-center space-x-2">
+                                            <Button variant="ghost" size="sm" onClick={() => handleProgressGroup(group, term.id)}>
+                                              <ArrowRight className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
+                                              <Edit2 className="w-4 h-4" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {getFilteredGroupsForTerm(term.id, intake.id).length === 0 && (
+                                        <div className="text-sm text-gray-400 italic ml-3">No groups in this term yet</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                                {getFilteredTerms().length === 0 && (
+                                  <div className="text-sm text-gray-400 italic">No terms created yet</div>
+                                )}
                               </div>
                             </CollapsibleContent>
                           </Collapsible>
@@ -589,7 +637,8 @@ function CreateEntityForm({
   onClose, 
   departments, 
   programs, 
-  intakes 
+  intakes,
+  terms 
 }: { 
   type: 'program' | 'intake' | 'group' | 'term';
   setType: (type: 'program' | 'intake' | 'group' | 'term') => void;
@@ -597,6 +646,7 @@ function CreateEntityForm({
   departments: any[] | undefined;
   programs: any[] | undefined;
   intakes: any[] | undefined;
+  terms: any[] | undefined;
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -605,6 +655,7 @@ function CreateEntityForm({
     departmentId: '',
     programId: '',
     intakeId: '',
+    termId: '',
     duration: '',
     year: '',
     semester: '',
@@ -667,6 +718,7 @@ function CreateEntityForm({
         data.startDate = formData.startDate;
         data.endDate = formData.endDate;
         break;
+        data.termId = parseInt(formData.termId);
       case 'group':
         data.intakeId = parseInt(formData.intakeId);
         data.capacity = parseInt(formData.maxStudents);
@@ -828,6 +880,19 @@ function CreateEntityForm({
             </Select>
           </div>
           <div>
+            <Label>Starting Term</Label>
+            <Select value={formData.termId} onValueChange={(value) => setFormData({ ...formData, termId: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select starting term" />
+              </SelectTrigger>
+              <SelectContent>
+                {terms?.map((term) => (
+                  <SelectItem key={term.id} value={term.id.toString()}>{term.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Maximum Students</Label>
             <Input
               type="number"
@@ -887,7 +952,8 @@ function EditEntityForm({
   onClose, 
   departments, 
   programs, 
-  intakes 
+  intakes,
+  terms 
 }: { 
   type: 'program' | 'intake' | 'group' | 'term';
   entity: any;
@@ -895,6 +961,7 @@ function EditEntityForm({
   departments: any[] | undefined;
   programs: any[] | undefined;
   intakes: any[] | undefined;
+  terms: any[] | undefined;
 }) {
   const [formData, setFormData] = useState(() => {
     if (!entity) return {
@@ -984,6 +1051,7 @@ function EditEntityForm({
         data.endDate = formData.endDate;
         break;
       case 'group':
+        data.termId = parseInt(formData.termId);
         data.intakeId = parseInt(formData.intakeId);
         data.capacity = parseInt(formData.maxStudents);
         break;
