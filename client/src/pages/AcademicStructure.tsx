@@ -1211,6 +1211,15 @@ function EditEntityForm({
       endDate: ''
     };
 
+    // Extract year from intake name if this is an intake
+    let extractedYear = currentYear;
+    if (type === 'intake' && entity.name) {
+      const yearMatch = entity.name.match(/\d{4}/);
+      if (yearMatch) {
+        extractedYear = yearMatch[0];
+      }
+    }
+
     // Pre-populate form with entity data
     return {
       name: entity.name || '',
@@ -1220,7 +1229,7 @@ function EditEntityForm({
       programId: entity.programId?.toString() || '',
       intakeId: entity.intakeId?.toString() || '',
       duration: entity.duration?.toString() || '',
-      year: entity.year?.toString() || entity.number?.toString() || currentYear,
+      year: entity.year?.toString() || entity.number?.toString() || extractedYear,
       semester: entity.semester?.toString() || entity.credits?.toString() || '',
       maxStudents: entity.maxStudents?.toString() || entity.capacity?.toString() || '',
       startDate: entity.startDate || '',
@@ -1280,9 +1289,12 @@ function EditEntityForm({
         data.totalTerms = entity.totalTerms; // Keep existing totalTerms, don't change during edit
         data.startDate = formData.startDate;
         data.endDate = formData.endDate;
-        // Include year in name if provided
-        if (formData.year && !formData.name.includes(formData.year)) {
-          data.name = `${formData.name} ${formData.year}`;
+        // Handle year in name properly - remove any existing years and add the new one
+        let baseName = formData.name;
+        if (formData.year) {
+          // Remove any existing year numbers (4 digits) from the name
+          baseName = baseName.replace(/\s*\d{4}\s*/g, '').trim();
+          data.name = `${baseName} ${formData.year}`;
         }
         break;
       case 'group':
