@@ -497,8 +497,8 @@ function CreateEntityForm({
         data.currentStudents = 0;
         break;
       case 'term':
-        data.startDate = formData.startDate;
-        data.endDate = formData.endDate;
+        data.number = parseInt(formData.year) || 1; // Use year field as term number
+        data.credits = parseInt(formData.semester) || 3; // Use semester field as credits
         break;
     }
 
@@ -668,20 +668,22 @@ function CreateEntityForm({
       {type === 'term' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Start Date</Label>
+            <Label>Term Number</Label>
             <Input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              type="number"
+              value={formData.year}
+              onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+              placeholder="Term number (1, 2, 3, etc.)"
               required
             />
           </div>
           <div>
-            <Label>End Date</Label>
+            <Label>Credits</Label>
             <Input
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              type="number"
+              value={formData.semester}
+              onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+              placeholder="Credits for this term"
               required
             />
           </div>
