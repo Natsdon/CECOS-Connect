@@ -946,13 +946,12 @@ function CreateEntityForm({
         break;
       case 'intake':
         data.programId = parseInt(formData.programId);
-        
         data.totalTerms = parseInt(formData.semester);
         data.startDate = formData.startDate;
         data.endDate = formData.endDate;
         break;
-        data.termId = parseInt(formData.termId);
       case 'group':
+        data.termId = parseInt(formData.termId);
         data.intakeId = parseInt(formData.intakeId);
         data.capacity = parseInt(formData.maxStudents);
         break;
@@ -1278,10 +1277,13 @@ function EditEntityForm({
         break;
       case 'intake':
         data.programId = parseInt(formData.programId);
-        
-        data.totalTerms = parseInt(formData.semester);
+        data.totalTerms = entity.totalTerms; // Keep existing totalTerms, don't change during edit
         data.startDate = formData.startDate;
         data.endDate = formData.endDate;
+        // Include year in name if provided
+        if (formData.year && !formData.name.includes(formData.year)) {
+          data.name = `${formData.name} ${formData.year}`;
+        }
         break;
       case 'group':
         data.termId = parseInt(formData.termId);
@@ -1447,8 +1449,8 @@ function EditEntityForm({
             <Label>Term Number</Label>
             <Input
               type="number"
-              value={formData.year}
-              onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+              value={formData.number}
+              onChange={(e) => setFormData({ ...formData, number: e.target.value })}
               placeholder="Term number (1, 2, 3, etc.)"
               required
             />
@@ -1457,8 +1459,8 @@ function EditEntityForm({
             <Label>Credits</Label>
             <Input
               type="number"
-              value={formData.semester}
-              onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+              value={formData.credits}
+              onChange={(e) => setFormData({ ...formData, credits: e.target.value })}
               placeholder="Credits"
               required
             />
