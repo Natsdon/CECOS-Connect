@@ -686,6 +686,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/groups/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const groupData = req.body;
+      const group = await storage.updateGroup(id, groupData);
+      
+      if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+      }
+      
+      res.json(group);
+    } catch (error) {
+      console.error("Update group error:", error);
+      res.status(400).json({ message: "Invalid group data" });
+    }
+  });
+
   // Terms routes
   app.get("/api/terms", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
