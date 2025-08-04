@@ -55,11 +55,13 @@ export interface IStorage {
   getAcademicPrograms(departmentId?: number): Promise<AcademicProgram[]>;
   getAcademicProgramById(id: number): Promise<AcademicProgram | undefined>;
   createAcademicProgram(program: InsertAcademicProgram): Promise<AcademicProgram>;
+  updateProgram(id: number, program: Partial<InsertAcademicProgram>): Promise<AcademicProgram | undefined>;
   
   // Intakes
   getIntakes(programId?: number): Promise<Intake[]>;
   getIntakeById(id: number): Promise<Intake | undefined>;
   createIntake(intake: InsertIntake): Promise<Intake>;
+  updateIntake(id: number, intake: Partial<InsertIntake>): Promise<Intake | undefined>;
   
   // Groups
   getGroups(intakeId?: number): Promise<Group[]>;
@@ -494,6 +496,15 @@ export class DatabaseStorage implements IStorage {
     return newProgram;
   }
 
+  async updateProgram(id: number, program: Partial<InsertAcademicProgram>): Promise<AcademicProgram | undefined> {
+    const [updatedProgram] = await db
+      .update(academicPrograms)
+      .set(program)
+      .where(eq(academicPrograms.id, id))
+      .returning();
+    return updatedProgram || undefined;
+  }
+
   // Intakes implementation
   async getIntakes(programId?: number): Promise<Intake[]> {
     if (programId) {
@@ -510,6 +521,15 @@ export class DatabaseStorage implements IStorage {
   async createIntake(intake: InsertIntake): Promise<Intake> {
     const [newIntake] = await db.insert(intakes).values(intake).returning();
     return newIntake;
+  }
+
+  async updateIntake(id: number, intake: Partial<InsertIntake>): Promise<Intake | undefined> {
+    const [updatedIntake] = await db
+      .update(intakes)
+      .set(intake)
+      .where(eq(intakes.id, id))
+      .returning();
+    return updatedIntake || undefined;
   }
 
   // Groups implementation
