@@ -1195,6 +1195,8 @@ function EditEntityForm({
   terms: any[] | undefined;
 }) {
   const [formData, setFormData] = useState(() => {
+    const currentYear = new Date().getFullYear().toString();
+    
     if (!entity) return {
       name: '',
       code: '',
@@ -1203,7 +1205,7 @@ function EditEntityForm({
       programId: '',
       intakeId: '',
       duration: '',
-      year: '',
+      year: currentYear,
       semester: '',
       maxStudents: '',
       startDate: '',
@@ -1219,7 +1221,7 @@ function EditEntityForm({
       programId: entity.programId?.toString() || '',
       intakeId: entity.intakeId?.toString() || '',
       duration: entity.duration?.toString() || '',
-      year: entity.year?.toString() || entity.number?.toString() || '',
+      year: entity.year?.toString() || entity.number?.toString() || currentYear,
       semester: entity.semester?.toString() || entity.credits?.toString() || '',
       maxStudents: entity.maxStudents?.toString() || entity.capacity?.toString() || '',
       startDate: entity.startDate || '',
@@ -1370,27 +1372,23 @@ function EditEntityForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Year</Label>
-              <Input
-                type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                placeholder="Year"
-                required
-              />
-            </div>
-            <div>
-              <Label>Semester</Label>
-              <Input
-                type="number"
-                value={formData.semester}
-                onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                placeholder="Semester"
-                required
-              />
-            </div>
+          <div>
+            <Label>Year</Label>
+            <Select value={formData.year} onValueChange={(value) => setFormData({ ...formData, year: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2023">2023</SelectItem>
+                <SelectItem value="2024">2024</SelectItem>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+                <SelectItem value="2027">2027</SelectItem>
+                <SelectItem value="2028">2028</SelectItem>
+                <SelectItem value="2029">2029</SelectItem>
+                <SelectItem value="2030">2030</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
