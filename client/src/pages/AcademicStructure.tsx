@@ -76,6 +76,9 @@ export default function AcademicStructure() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<'program' | 'intake' | 'group' | 'term'>('program');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<any>(null);
+  const [editingType, setEditingType] = useState<'program' | 'intake' | 'group' | 'term'>('program');
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -127,6 +130,31 @@ export default function AcademicStructure() {
 
   const getGroupsForIntake = (intakeId: number) => {
     return groups?.filter(group => group.intakeId === intakeId) || [];
+  };
+
+  // Edit handlers
+  const handleEditProgram = (program: AcademicProgram) => {
+    setEditingEntity(program);
+    setEditingType('program');
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditIntake = (intake: Intake) => {
+    setEditingEntity(intake);
+    setEditingType('intake');
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditGroup = (group: Group) => {
+    setEditingEntity(group);
+    setEditingType('group');
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditTerm = (term: Term) => {
+    setEditingEntity(term);
+    setEditingType('term');
+    setIsEditDialogOpen(true);
   };
 
   if (programsLoading || intakesLoading || groupsLoading || termsLoading) {
@@ -181,6 +209,23 @@ export default function AcademicStructure() {
               type={createType} 
               setType={setCreateType}
               onClose={() => setIsCreateDialogOpen(false)}
+              departments={departments}
+              programs={programs}
+              intakes={intakes}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit {editingType.charAt(0).toUpperCase() + editingType.slice(1)}</DialogTitle>
+            </DialogHeader>
+            <EditEntityForm 
+              type={editingType} 
+              entity={editingEntity}
+              onClose={() => setIsEditDialogOpen(false)}
               departments={departments}
               programs={programs}
               intakes={intakes}
@@ -283,11 +328,11 @@ export default function AcademicStructure() {
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditProgram(program);
+                        }}>
                           <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Settings className="w-4 h-4" />
                         </Button>
                       </div>
                     </CollapsibleTrigger>
@@ -317,7 +362,10 @@ export default function AcademicStructure() {
                                 </Badge>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditIntake(intake);
+                                }}>
                                   <Edit2 className="w-4 h-4" />
                                 </Button>
                               </div>
@@ -339,11 +387,8 @@ export default function AcademicStructure() {
                                     </Badge>
                                   </div>
                                   <div className="flex items-center space-x-2">
-                                    <Button variant="ghost" size="sm">
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
                                       <Edit2 className="w-4 h-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="sm">
-                                      <Users className="w-4 h-4" />
                                     </Button>
                                   </div>
                                 </div>
@@ -389,11 +434,8 @@ export default function AcademicStructure() {
                       <div>Credits: {(term as any).credits}</div>
                     </div>
                     <div className="flex items-center space-x-2 mt-4">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
                         <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Settings className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -700,6 +742,304 @@ function CreateEntityForm({
           className="bg-burgundy-500 hover:bg-burgundy-600"
         >
           {createMutation.isPending ? 'Creating...' : `Create ${type.charAt(0).toUpperCase() + type.slice(1)}`}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function EditEntityForm({ 
+  type, 
+  entity,
+  onClose, 
+  departments, 
+  programs, 
+  intakes 
+}: { 
+  type: 'program' | 'intake' | 'group' | 'term';
+  entity: any;
+  onClose: () => void;
+  departments: any[] | undefined;
+  programs: any[] | undefined;
+  intakes: any[] | undefined;
+}) {
+  const [formData, setFormData] = useState(() => {
+    if (!entity) return {
+      name: '',
+      code: '',
+      description: '',
+      departmentId: '',
+      programId: '',
+      intakeId: '',
+      duration: '',
+      year: '',
+      semester: '',
+      maxStudents: '',
+      startDate: '',
+      endDate: ''
+    };
+
+    // Pre-populate form with entity data
+    return {
+      name: entity.name || '',
+      code: entity.code || '',
+      description: entity.description || '',
+      departmentId: entity.departmentId?.toString() || '',
+      programId: entity.programId?.toString() || '',
+      intakeId: entity.intakeId?.toString() || '',
+      duration: entity.duration?.toString() || '',
+      year: entity.year?.toString() || entity.number?.toString() || '',
+      semester: entity.semester?.toString() || entity.credits?.toString() || '',
+      maxStudents: entity.maxStudents?.toString() || entity.capacity?.toString() || '',
+      startDate: entity.startDate || '',
+      endDate: entity.endDate || ''
+    };
+  });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const endpoints = {
+        program: '/api/academic-programs',
+        intake: '/api/intakes',
+        group: '/api/groups',
+        term: '/api/terms'
+      };
+      
+      return apiRequest(`${endpoints[type]}/${entity.id}`, 'PUT', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} updated successfully`,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/${type === 'program' ? 'academic-programs' : type + 's'}`] });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || `Failed to update ${type}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const data: any = {
+      name: formData.name,
+      isActive: entity.isActive,
+    };
+
+    switch (type) {
+      case 'program':
+        data.code = formData.code;
+        data.departmentId = parseInt(formData.departmentId);
+        data.duration = parseInt(formData.duration);
+        data.description = formData.description;
+        break;
+      case 'intake':
+        data.programId = parseInt(formData.programId);
+        data.year = parseInt(formData.year);
+        data.semester = parseInt(formData.semester);
+        data.startDate = formData.startDate;
+        data.endDate = formData.endDate;
+        break;
+      case 'group':
+        data.intakeId = parseInt(formData.intakeId);
+        data.maxStudents = parseInt(formData.maxStudents);
+        data.currentStudents = entity.currentStudents || 0;
+        break;
+      case 'term':
+        data.number = parseInt(formData.year) || 1;
+        data.credits = parseInt(formData.semester) || 3;
+        break;
+    }
+
+    updateMutation.mutate(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label>Name</Label>
+        <Input
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder={`Enter ${type} name`}
+          required
+        />
+      </div>
+
+      {type === 'program' && (
+        <>
+          <div>
+            <Label>Code</Label>
+            <Input
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+              placeholder="Enter program code"
+              required
+            />
+          </div>
+          <div>
+            <Label>Department</Label>
+            <Select value={formData.departmentId} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments?.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id.toString()}>{dept.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Duration (years)</Label>
+            <Input
+              type="number"
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+              placeholder="Enter duration in years"
+              required
+            />
+          </div>
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Enter program description"
+            />
+          </div>
+        </>
+      )}
+
+      {type === 'intake' && (
+        <>
+          <div>
+            <Label>Program</Label>
+            <Select value={formData.programId} onValueChange={(value) => setFormData({ ...formData, programId: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select program" />
+              </SelectTrigger>
+              <SelectContent>
+                {programs?.map((program) => (
+                  <SelectItem key={program.id} value={program.id.toString()}>{program.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Year</Label>
+              <Input
+                type="number"
+                value={formData.year}
+                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                placeholder="Year"
+                required
+              />
+            </div>
+            <div>
+              <Label>Semester</Label>
+              <Input
+                type="number"
+                value={formData.semester}
+                onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                placeholder="Semester"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {type === 'group' && (
+        <>
+          <div>
+            <Label>Intake</Label>
+            <Select value={formData.intakeId} onValueChange={(value) => setFormData({ ...formData, intakeId: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select intake" />
+              </SelectTrigger>
+              <SelectContent>
+                {intakes?.map((intake) => (
+                  <SelectItem key={intake.id} value={intake.id.toString()}>{intake.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Maximum Students</Label>
+            <Input
+              type="number"
+              value={formData.maxStudents}
+              onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })}
+              placeholder="Enter maximum students"
+              required
+            />
+          </div>
+        </>
+      )}
+
+      {type === 'term' && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Term Number</Label>
+            <Input
+              type="number"
+              value={formData.year}
+              onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+              placeholder="Term number (1, 2, 3, etc.)"
+              required
+            />
+          </div>
+          <div>
+            <Label>Credits</Label>
+            <Input
+              type="number"
+              value={formData.semester}
+              onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+              placeholder="Credits"
+              required
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center space-x-3 pt-4">
+        <Button type="submit" disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? 'Updating...' : 'Update'}
+        </Button>
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
         </Button>
       </div>
     </form>
