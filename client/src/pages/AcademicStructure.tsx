@@ -277,6 +277,125 @@ export default function AcademicStructure() {
     },
   });
 
+  // Delete handlers
+  const handleDeleteIntake = (intake: any) => {
+    // Check if intake has any groups
+    const intakeGroups = groups?.filter(g => g.intakeId === intake.id) || [];
+    if (intakeGroups.length > 0) {
+      toast({
+        title: 'Cannot Delete Intake',
+        description: `This intake has ${intakeGroups.length} group(s). Remove all groups first.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete intake "${intake.name}"?`)) {
+      deleteIntakeMutation.mutate(intake.id);
+    }
+  };
+
+  const handleDeleteTerm = (term: any) => {
+    // Check if term has any groups
+    const termGroups = groups?.filter(g => (g as any).termId === term.id) || [];
+    if (termGroups.length > 0) {
+      toast({
+        title: 'Cannot Delete Term',
+        description: `This term has ${termGroups.length} group(s). Remove all groups first.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete term "${term.name}"?`)) {
+      deleteTermMutation.mutate(term.id);
+    }
+  };
+
+  const handleDeleteGroup = async (group: any) => {
+    // Check if group has any students (we'll need to implement this API endpoint)
+    try {
+      const studentsResponse = await apiRequest(`/api/groups/${group.id}/students`, 'GET');
+      const students = await studentsResponse.json();
+      
+      if (students.length > 0) {
+        toast({
+          title: 'Cannot Delete Group',
+          description: `This group has ${students.length} student(s) enrolled. Remove all students first.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    } catch (error) {
+      // If API endpoint doesn't exist yet, just warn about potential students
+      console.warn('Student check API not available');
+    }
+
+    if (window.confirm(`Are you sure you want to delete group "${group.name}"?`)) {
+      deleteGroupMutation.mutate(group.id);
+    }
+  };
+
+  const deleteIntakeMutation = useMutation({
+    mutationFn: async (intakeId: number) => {
+      return await apiRequest(`/api/intakes/${intakeId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/intakes'] });
+      toast({
+        title: 'Success',
+        description: 'Intake deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete intake.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteTermMutation = useMutation({
+    mutationFn: async (termId: number) => {
+      return await apiRequest(`/api/terms/${termId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/terms'] });
+      toast({
+        title: 'Success',
+        description: 'Term deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete term.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      return await apiRequest(`/api/groups/${groupId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+      toast({
+        title: 'Success',
+        description: 'Group deleted successfully.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete group.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleEditTerm = (term: Term) => {
     setEditingEntity(term);
     setEditingType('term');
@@ -567,6 +686,12 @@ export default function AcademicStructure() {
                                 }}>
                                   <Edit2 className="w-4 h-4" />
                                 </Button>
+                                <Button variant="ghost" size="sm" onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteIntake(intake);
+                                }}>
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </Button>
                               </div>
                             </CollapsibleTrigger>
                             
@@ -591,9 +716,14 @@ export default function AcademicStructure() {
                                           </div>
                                         </div>
                                       </div>
-                                      <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
-                                        <Edit2 className="w-3 h-3" />
-                                      </Button>
+                                      <div className="flex items-center space-x-1">
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditTerm(term)}>
+                                          <Edit2 className="w-3 h-3" />
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteTerm(term)}>
+                                          <Trash2 className="w-3 h-3 text-red-500" />
+                                        </Button>
+                                      </div>
                                     </div>
 
                                     {/* Groups under this term */}
@@ -618,6 +748,9 @@ export default function AcademicStructure() {
                                             </Button>
                                             <Button variant="ghost" size="sm" onClick={() => handleEditGroup(group)}>
                                               <Edit2 className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => handleDeleteGroup(group)}>
+                                              <Trash2 className="w-4 h-4 text-red-500" />
                                             </Button>
                                           </div>
                                         </div>

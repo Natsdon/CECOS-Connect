@@ -664,6 +664,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/intakes/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedIntake = await storage.updateIntake(id, req.body);
+      res.json(updatedIntake);
+    } catch (error) {
+      console.error("Update intake error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/intakes/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteIntake(id);
+      res.json({ message: "Intake deleted successfully" });
+    } catch (error) {
+      console.error("Delete intake error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Groups routes  
   app.get("/api/groups", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
@@ -703,6 +725,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/groups/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteGroup(id);
+      res.json({ message: "Group deleted successfully" });
+    } catch (error) {
+      console.error("Delete group error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Terms routes
   app.get("/api/terms", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
     try {
@@ -722,6 +755,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create term error:", error);
       res.status(400).json({ message: "Invalid term data" });
+    }
+  });
+
+  app.put("/api/terms/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const termData = req.body;
+      const term = await storage.updateTerm(id, termData);
+      res.json(term);
+    } catch (error) {
+      console.error("Update term error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/terms/:id", authenticateToken, authorize(['admin', 'epr_admin']), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTerm(id);
+      res.json({ message: "Term deleted successfully" });
+    } catch (error) {
+      console.error("Delete term error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
