@@ -680,12 +680,8 @@ export default function AcademicStructure() {
                               </div>
                               <div className="flex items-center space-x-2">
                                 <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <div>
-                                      <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                        <Settings className="w-4 h-4" />
-                                      </Button>
-                                    </div>
+                                  <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded" onClick={(e) => e.stopPropagation()}>
+                                    <Settings className="w-4 h-4" />
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                                     <DropdownMenuItem onClick={() => handleEditIntake(intake)}>
@@ -727,12 +723,8 @@ export default function AcademicStructure() {
                                       </div>
                                       <div className="flex items-center space-x-1">
                                         <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <div>
-                                              <Button variant="ghost" size="sm">
-                                                <Settings className="w-3 h-3" />
-                                              </Button>
-                                            </div>
+                                          <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded">
+                                            <Settings className="w-3 h-3" />
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent>
                                             <DropdownMenuItem onClick={() => handleEditTerm(term)}>
@@ -772,12 +764,8 @@ export default function AcademicStructure() {
                                               <ArrowRight className="w-4 h-4" />
                                             </Button>
                                             <DropdownMenu>
-                                              <DropdownMenuTrigger asChild>
-                                                <div>
-                                                  <Button variant="ghost" size="sm">
-                                                    <Settings className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
+                                              <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded">
+                                                <Settings className="w-4 h-4" />
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent>
                                                 <DropdownMenuItem onClick={() => handleEditGroup(group)}>
