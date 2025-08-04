@@ -380,13 +380,13 @@ export default function AcademicStructure() {
                   <div key={term.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-gray-900">{term.name}</h3>
-                      <Badge variant={term.isActive ? "default" : "secondary"}>
-                        {term.isActive ? "Active" : "Inactive"}
+                      <Badge variant="default">
+                        Active
                       </Badge>
                     </div>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <div>Start: {new Date(term.startDate).toLocaleDateString()}</div>
-                      <div>End: {new Date(term.endDate).toLocaleDateString()}</div>
+                      <div>Term Number: {term.number}</div>
+                      <div>Credits: {term.credits}</div>
                     </div>
                     <div className="flex items-center space-x-2 mt-4">
                       <Button variant="ghost" size="sm">
