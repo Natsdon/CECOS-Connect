@@ -1,6 +1,26 @@
-node_modules
-dist
+# Node dependencies
+node_modules/
+
+# Build output folders
+dist/
+build/
+
+# Environment variables
+.env
+
+# Replit local files
+.replit
+.local/
+
+# Logs
+*.log
+
+# OS files
 .DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+Thumbs.db
+
+# Editor folders
+.vscode/
+
+# Any big assets you don't want in GitHub (e.g. uploads)
+attached_assets/

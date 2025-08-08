@@ -11,6 +11,7 @@ import {
   type UserPrivilege, type InsertUserPrivilege
 } from "@shared/schema";
 import { db } from "./db";
+import { PgSelect } from 'drizzle-orm/pg-core';
 import { eq, and, desc, sql, ilike, gte, lte, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -163,12 +164,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async validatePassword(username: string, password: string): Promise<User | null> {
-    const user = await this.getUserByUsername(username);
-    if (!user) return null;
-    
-    const isValid = await bcrypt.compare(password, user.password);
-    return isValid ? user : null;
+  console.log('🔍 Checking user:', username);
+
+  const user = await this.getUserByUsername(username);
+  console.log('🔐 Found user:', user);
+
+  if (!user) {
+    console.log('❌ No user found');
+    return null;
   }
+
+  try {
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('🔑 Password match?', isMatch);
+
+    return isMatch ? user : null;
+  } catch (error) {
+    console.error('💥 Bcrypt compare failed:', error);
+    return null;
+  }
+}
+
 
   async getStudents(filters?: { departmentId?: number; year?: number; status?: string; search?: string }): Promise<Student[]> {
     const conditions = [];
@@ -664,18 +680,34 @@ export class DatabaseStorage implements IStorage {
     return { totalClasses, attendedClasses, percentage };
   }
 
-  async getExams(courseId?: number, facultyId?: number): Promise<Exam[]> {
-    let query = db.select().from(exams);
-    
-    if (courseId) {
-      query = query.where(eq(exams.courseId, courseId));
-    }
-    if (facultyId) {
-      query = query.where(eq(exams.createdBy, facultyId));
-    }
-    
-    return await query.orderBy(desc(exams.createdAt));
+async getExams(
+  subjectId?: number, 
+  groupId?: number, 
+  facultyId?: number
+): Promise<Exam[]> {
+  let query = db.select().from(exams);
+
+  const conditions: Array<any> = [];
+  if (subjectId) {
+    conditions.push(eq(exams.subjectId, subjectId));
   }
+  if (groupId) {
+    conditions.push(eq(exams.groupId, groupId));
+  }
+  if (facultyId) {
+    conditions.push(eq(exams.createdBy, facultyId));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
+  }
+
+  // Await query and cast result to Exam[]
+  const results = await query.orderBy(desc(exams.createdAt));
+  return results as Exam[];
+}
+
+
 
   async getExamById(id: number): Promise<Exam | undefined> {
     const [exam] = await db.select().from(exams).where(eq(exams.id, id));
@@ -696,23 +728,27 @@ export class DatabaseStorage implements IStorage {
     return updatedExam || undefined;
   }
 
-  async getSubmissions(examId?: number, studentId?: number): Promise<Submission[]> {
-    let query = db.select().from(submissions);
-    
-    if (examId) {
-      query = query.where(eq(submissions.examId, examId));
-    }
-    if (studentId) {
-      query = query.where(eq(submissions.studentId, studentId));
-    }
-    
-    return await query.orderBy(desc(submissions.submittedAt));
+async getSubmissions(
+  examId?: number, 
+  studentId?: number
+): Promise<Submission[]> {
+  let query = db.select().from(submissions);
+
+  if (examId) {
+    query = query.where(eq(submissions.examId, examId));
+  }
+  if (studentId) {
+    query = query.where(eq(submissions.studentId, studentId));
   }
 
-  async createSubmission(submission: InsertSubmission): Promise<Submission> {
-    const [newSubmission] = await db.insert(submissions).values(submission).returning();
-    return newSubmission;
-  }
+  const results = await query.orderBy(desc(submissions.submittedAt));
+  return results as Submission[];
+}
+
+async createSubmission(submission: InsertSubmission): Promise<Submission> {
+  const [newSubmission] = await db.insert(submissions).values(submission).returning();
+  return newSubmission;
+}
 
   async updateSubmission(id: number, submission: Partial<InsertSubmission>): Promise<Submission | undefined> {
     const [updatedSubmission] = await db
